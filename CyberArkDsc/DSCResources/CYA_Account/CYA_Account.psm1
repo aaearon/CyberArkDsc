@@ -118,7 +118,7 @@ function Set-TargetResource {
 
     if ($Ensure -eq 'Present') {
 
-        $AccountExists = Test-Account -UserName $UserName -Address $Address -PlatformId $PlatformId -SafeName $SafeName -PvwaUrl $PvwaUrl -AuthenticationType $AuthenticationType -Credential $Credential -SkipCertificateCheck:$SkipCertificateCheck
+        $AccountExists = Test-TargetResource -UserName $UserName -Address $Address -PlatformId $PlatformId -SafeName $SafeName -PvwaUrl $PvwaUrl -AuthenticationType $AuthenticationType -Credential $Credential -SkipCertificateCheck:$SkipCertificateCheck
 
         if ($AccountExists -eq $false) {
             $NewAccountProperties = @{
@@ -134,7 +134,7 @@ function Set-TargetResource {
     }
 }
 
-function Test-Account {
+function Test-TargetResource {
     param (
         [ensure]$ensure = 'Present',
 
