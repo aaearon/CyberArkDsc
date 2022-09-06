@@ -1,0 +1,16 @@
+﻿[ClassVersion("1.0.0"), FriendlyName("CYAAccount")]
+class CYA_Account : OMI_BaseResource
+{
+  [Key] string UserName;
+  [Key] string Address;
+  [Key] string PlatformId;
+  [Key] string SafeName;
+  [Required] string PvwaUrl;
+  [Required] string AuthenticationType;
+  [Required, EmbeddedInstance("MSFT_Credential")] string Credential;
+  [write] string Name;
+  [write,ValueMap{"Present", "Absent"},Values{"Present", "Absent"}] string Ensure;
+  [write] boolean SkipCertificateCheck;
+  [read] string PlatformAccountProperties;
+  [read] string ID;
+};
