@@ -1,6 +1,6 @@
 # CyberArkDsc
 
-A [PowerShell DSC](https://docs.microsoft.com/en-us/powershell/dsc/overview?view=dsc-1.1) module for CyberArk's [Privileged Access Manager](https://www.cyberark.com/products/privileged-access-manager/).
+A [PowerShell DSC](https://docs.microsoft.com/en-us/powershell/dsc/overview?view=dsc-1.1) module for CyberArk's [Privileged Access Manager](https://www.cyberark.com/products/privileged-access-manager/) objects (Accounts, Safes, Platforms, etc.).
 
 ## Usage
 
