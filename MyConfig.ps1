@@ -52,4 +52,5 @@ $ConfigurationData = @{
 
 # $Credential = Get-Credential -Message 'Enter the username and password for the Vault user'
 # MyConfig -ConfigurationData $ConfigurationData -Credential $Credential
+
 MyConfig -ConfigurationData $ConfigurationData
