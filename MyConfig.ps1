@@ -8,7 +8,7 @@ Configuration MyConfig {
         [pscredential]$Credential
     )
 
-    Import-DSCResource -ModuleName CYA_Account
+    Import-DSCResource -ModuleName CyberArkDsc
 
     Node localhost {
 
