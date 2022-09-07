@@ -1,13 +1,12 @@
-﻿enum Ensure
-{
+﻿enum Ensure {
     Absent
     Present
 }
 
 function Get-Account {
     param (
-        [ValidateSet("Present", "Absent")]
-        [string]$Ensure = "Present",
+        [ValidateSet('Present', 'Absent')]
+        [string]$Ensure = 'Present',
 
         [parameter(Mandatory = $true)]
         [ValidateNotNullOrEmpty()]
@@ -75,8 +74,8 @@ function Get-Account {
 
 function Set-Account {
     param (
-        [ValidateSet("Present", "Absent")]
-        [string]$Ensure = "Present",
+        [ValidateSet('Present', 'Absent')]
+        [string]$Ensure = 'Present',
 
         [parameter(Mandatory = $true)]
         [ValidateNotNullOrEmpty()]
@@ -122,27 +121,34 @@ function Set-Account {
 
     New-PASSession @SessionParameters
 
-    if ($Ensure -eq 'Present') {
+    $DesiredState = Test-Account -Ensure $Ensure -UserName $UserName -Address $Address -PlatformId $PlatformId -SafeName $SafeName -PvwaUrl $PvwaUrl -AuthenticationType $AuthenticationType -Credential $Credential -SkipCertificateCheck:$SkipCertificateCheck
 
-        $AccountExists = Test-TargetResource -UserName $UserName -Address $Address -PlatformId $PlatformId -SafeName $SafeName -PvwaUrl $PvwaUrl -AuthenticationType $AuthenticationType -Credential $Credential -SkipCertificateCheck:$SkipCertificateCheck
+    if ($DesiredState -eq $false) {
 
-        if ($AccountExists -eq $false) {
+        if ($Ensure -eq 'Present') {
+
             $NewAccountProperties = @{
-                UserName = $UserName
-                Address  = $Address
+                UserName   = $UserName
+                Address    = $Address
                 PlatformId = $PlatformId
-                SafeName = $SafeName
+                SafeName   = $SafeName
             }
             if ($Name) { $NewAccountProperties.Add('Name', $Name) }
 
             Add-PASAccount @NewAccountProperties
         }
+
+        if ($Ensure -eq 'Absent') {
+            Get-PASAccount -safeName $SafeName -search "$UserName $Address $PlatformId" | Where-Object { $_.UserName -eq $UserName -and $_.Address -eq $Address -and $_.PlatformId -eq $PlatformId } | Remove-PASAccount
+        }
     }
 }
 
-function Test-TargetResource {
+
+function Test-Account {
     param (
-        [ensure]$ensure = 'Present',
+        [ValidateSet('Present', 'Absent')]
+        [ensure]$Ensure = 'Present',
 
         [parameter(Mandatory = $true)]
         [ValidateNotNullOrEmpty()]
@@ -178,7 +184,7 @@ function Test-TargetResource {
         [bool] $SkipCertificateCheck
     )
 
-    $AccountExists = $false
+    $DesiredState = $false
 
     $SessionParameters = @{
         BaseUri           = $PvwaUrl
@@ -190,13 +196,17 @@ function Test-TargetResource {
 
     New-PASSession @SessionParameters
 
-    $Account = Get-PASAccount -safeName $SafeName -search "$UserName $Address $PlatformId" | Where-Object { $_.UserName -eq $UserName -and $_.Address -eq $Address -and $_.PlatformId -eq $PlatformId }
+    $AccountExists = Get-PASAccount -safeName $SafeName -search "$UserName $Address $PlatformId" | Where-Object { $_.UserName -eq $UserName -and $_.Address -eq $Address -and $_.PlatformId -eq $PlatformId }
 
-    if ($Account) {
-        $AccountExists = $true
+    if ($Ensure -eq 'Present' -and $null -ne $AccountExists) {
+        $DesiredState = $true
     }
 
-    $AccountExists
+    if ($Ensure -eq 'Absent' -and $null -eq $AccountExists) {
+        $DesiredState = $true
+    }
+
+    $DesiredState
 }
 
 [DscResource()]
@@ -247,7 +257,7 @@ class CYA_Account {
     }
 
     [bool] Test() {
-        $Test = Test-TargetResource -Ensure $this.Ensure -UserName $this.UserName -Address $this.Address -PlatformId $this.PlatformId -SafeName $this.SafeName -PvwaUrl $this.PvwaUrl -AuthenticationType $this.AuthenticationType -Credential $this.Credential -SkipCertificateCheck:$this.SkipCertificateCheck
+        $Test = Test-Account -Ensure $this.Ensure -UserName $this.UserName -Address $this.Address -PlatformId $this.PlatformId -SafeName $this.SafeName -PvwaUrl $this.PvwaUrl -AuthenticationType $this.AuthenticationType -Credential $this.Credential -SkipCertificateCheck:$this.SkipCertificateCheck
         return $Test
     }
 }
