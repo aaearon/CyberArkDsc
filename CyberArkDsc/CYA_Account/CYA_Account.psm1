@@ -51,13 +51,13 @@ function Get-Account {
 
     New-PASSession @SessionParameters
 
-    $AccountExists = Get-PASAccount -safeName $SafeName -search "$UserName $Address $PlatformId" | Where-Object { $_.UserName -eq $UserName -and $_.Address -eq $Address -and $_.PlatformId -eq $PlatformId }
+    $ResourceExists = Get-PASAccount -safeName $SafeName -search "$UserName $Address $PlatformId" | Where-Object { $_.UserName -eq $UserName -and $_.Address -eq $Address -and $_.PlatformId -eq $PlatformId }
 
-    if ($AccountExists) {
+    if ($ResourceExists) {
         $EnsureReturn = 'Present'
     }
 
-    Close-PASSession
+    Close-PASSession -ErrorAction SilentlyContinue
 
     @{
         Ensure                    = $EnsureReturn
@@ -141,6 +141,8 @@ function Set-Account {
         if ($Ensure -eq 'Absent') {
             Get-PASAccount -safeName $SafeName -search "$UserName $Address $PlatformId" | Where-Object { $_.UserName -eq $UserName -and $_.Address -eq $Address -and $_.PlatformId -eq $PlatformId } | Remove-PASAccount
         }
+
+        Close-PASSession -ErrorAction SilentlyContinue
     }
 }
 
@@ -196,15 +198,17 @@ function Test-Account {
 
     New-PASSession @SessionParameters
 
-    $AccountExists = Get-PASAccount -safeName $SafeName -search "$UserName $Address $PlatformId" | Where-Object { $_.UserName -eq $UserName -and $_.Address -eq $Address -and $_.PlatformId -eq $PlatformId }
+    $ResourceExists = Get-PASAccount -safeName $SafeName -search "$UserName $Address $PlatformId" | Where-Object { $_.UserName -eq $UserName -and $_.Address -eq $Address -and $_.PlatformId -eq $PlatformId }
 
-    if ($Ensure -eq 'Present' -and $null -ne $AccountExists) {
+    if ($Ensure -eq 'Present' -and $null -ne $ResourceExists) {
         $DesiredState = $true
     }
 
-    if ($Ensure -eq 'Absent' -and $null -eq $AccountExists) {
+    if ($Ensure -eq 'Absent' -and $null -eq $ResourceExists) {
         $DesiredState = $true
     }
+
+    Close-PASSession -ErrorAction SilentlyContinue
 
     $DesiredState
 }

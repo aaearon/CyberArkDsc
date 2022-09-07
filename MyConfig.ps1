@@ -8,7 +8,7 @@ Configuration MyConfig {
         [pscredential]$Credential
     )
 
-    Import-DSCResource -ModuleName CYA_Account
+    Import-DSCResource -ModuleName CyberArkDsc
 
     Node localhost {
 
@@ -36,6 +36,19 @@ Configuration MyConfig {
             AuthenticationType   = 'LDAP'
             SkipCertificateCheck = $true
             Credential           = $VaultCredential
+        }
+
+        CYA_Safe 'Switches' {
+            Ensure                = 'Present'
+            SafeName              = 'Switches'
+            ManagingCPM           = 'PasswordManager'
+            Description           = 'Switches Safe'
+            NumberOfDaysRetention = '1'
+
+            PvwaUrl               = 'https://192.168.137.101'
+            AuthenticationType    = 'LDAP'
+            SkipCertificateCheck  = $true
+            Credential            = $VaultCredential
         }
     }
 }
