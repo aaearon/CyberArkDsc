@@ -135,7 +135,7 @@ function Set-Account {
             }
             if ($Name) { $NewAccountProperties.Add('Name', $Name) }
 
-            New-PASAccount @NewAccountProperties
+            Add-PASAccount @NewAccountProperties
         }
     }
 }
