@@ -37,6 +37,19 @@ Configuration MyConfig {
             SkipCertificateCheck = $true
             Credential           = $VaultCredential
         }
+
+        CYA_Safe 'Switches' {
+            Ensure                = 'Present'
+            SafeName              = 'Switches'
+            ManagingCPM           = 'PasswordManager'
+            Description           = 'Switches Safe'
+            NumberOfDaysRetention = '1'
+
+            PvwaUrl               = 'https://192.168.137.101'
+            AuthenticationType    = 'LDAP'
+            SkipCertificateCheck  = $true
+            Credential            = $VaultCredential
+        }
     }
 }
 

@@ -67,7 +67,8 @@ Copyright = '(c) Tim Schindler. All rights reserved.'
 
 # Modules to import as nested modules of the module specified in RootModule/ModuleToProcess
 NestedModules = @(
-    '.\CYA_Account\CYA_Account.psd1'
+    '.\CYA_Account\CYA_Account.psd1',
+    '.\CYA_Safe\CYA_Safe.psd1'
 )
 
 # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
@@ -83,7 +84,10 @@ VariablesToExport = '*'
 AliasesToExport = @()
 
 # DSC resources to export from this module
-DscResourcesToExport = @('CYA_Account')
+DscResourcesToExport = @(
+    'CYA_Account',
+    'CYA_Safe'
+)
 
 # List of all modules packaged with this module
 # ModuleList = @()
