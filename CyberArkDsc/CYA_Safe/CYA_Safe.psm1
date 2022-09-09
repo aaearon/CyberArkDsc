@@ -5,8 +5,7 @@
 
 function Get-Safe {
     param (
-        [ValidateSet('Present', 'Absent')]
-        [string]$Ensure = 'Present',
+        [Ensure]$Ensure,
 
         [parameter(Mandatory = $true)]
         [ValidateNotNullOrEmpty()]
@@ -32,7 +31,7 @@ function Get-Safe {
         [bool] $SkipCertificateCheck
     )
 
-    $EnsureReturn = 'Absent'
+    $EnsureReturn = [Ensure]::Absent
 
     $SessionParameters = @{
         BaseUri           = $PvwaUrl
@@ -47,7 +46,7 @@ function Get-Safe {
     $ResourceExists = Get-PASSafe -SafeName $SafeName -ErrorAction SilentlyContinue
 
     if ($ResourceExists) {
-        $EnsureReturn = 'Present'
+        $EnsureReturn = [Ensure]::Present
     }
 
     Close-PASSession -ErrorAction SilentlyContinue
@@ -64,9 +63,7 @@ function Get-Safe {
 
 function Set-Safe {
     param (
-
-        [ValidateSet('Present', 'Absent')]
-        [string]$Ensure = 'Present',
+        [Ensure]$Ensure,
 
         [parameter(Mandatory = $true)]
         [ValidateNotNullOrEmpty()]
@@ -125,7 +122,7 @@ function Set-Safe {
 
     if ($DesiredState -eq $false) {
 
-        if ($Ensure -eq 'Present') {
+        if ($Ensure -eq [Ensure]::Present) {
 
             $NewResourceProperties = @{
                 SafeName = $SafeName
@@ -138,7 +135,7 @@ function Set-Safe {
             Add-PASSafe @NewResourceProperties
         }
 
-        if ($Ensure -eq 'Absent') {
+        if ($Ensure -eq [Ensure]::Present) {
             Get-PASSafe -SafeName $SafeName | Remove-PASSafe
         }
 
@@ -149,8 +146,7 @@ function Set-Safe {
 
 function Test-Safe {
     param (
-        [ValidateSet('Present', 'Absent')]
-        [string]$Ensure = 'Present',
+        [Ensure]$Ensure,
 
         [parameter(Mandatory = $true)]
         [ValidateNotNullOrEmpty()]
@@ -203,11 +199,11 @@ function Test-Safe {
         $ResourceExists = $null
     }
 
-    if ($Ensure -eq 'Present' -and $null -ne $ResourceExists) {
+    if ($Ensure -eq [Ensure]::Present -and $null -ne $ResourceExists) {
         $DesiredState = $true
     }
 
-    if ($Ensure -eq 'Absent' -and $null -eq $ResourceExists) {
+    if ($Ensure -eq [Ensure]::Absent -and $null -eq $ResourceExists) {
         $DesiredState = $true
     }
 
