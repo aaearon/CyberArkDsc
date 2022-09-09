@@ -3,6 +3,8 @@
     Present
 }
 
+
+
 function Get-SafeMember {
     param (
         [Ensure]$Ensure,
@@ -25,17 +27,7 @@ function Get-SafeMember {
         [bool] $SkipCertificateCheck
     )
 
-    $EnsureReturn = [Ensure]::Absent
-
-    $SessionParameters = @{
-        BaseUri           = $PvwaUrl
-        Credential        = $Credential
-        Type              = $AuthenticationType
-        concurrentSession = $true
-    }
-    if ($SkipCertificateCheck) { $SessionParameters.Add('SkipCertificateCheck', $true) }
-
-    New-PASSession @SessionParameters
+    Get-CyberArkSession -PvwaUrl $PvwaUrl -Credential $Credential -AuthenticationType $AuthenticationType -SkipCertificateCheck $SkipCertificateCheck
 
     try {
         $ResourceExists = Get-PASSafeMember -SafeName $SafeName -MemberName $MemberName -ErrorAction SilentlyContinue
@@ -43,7 +35,6 @@ function Get-SafeMember {
     } catch {
         $EnsureReturn = [Ensure]::Absent
     } finally {
-        Close-PASSession -ErrorAction SilentlyContinue
 
         @{
             Ensure                                 = $EnsureReturn
@@ -144,15 +135,7 @@ function Set-SafeMember {
         [bool] $SkipCertificateCheck
     )
 
-    $SessionParameters = @{
-        BaseUri           = $PvwaUrl
-        Credential        = $Credential
-        Type              = $AuthenticationType
-        concurrentSession = $true
-    }
-    if ($SkipCertificateCheck) { $SessionParameters.Add('SkipCertificateCheck', $true) }
-
-    New-PASSession @SessionParameters
+    Get-CyberArkSession -PvwaUrl $PvwaUrl -Credential $Credential -AuthenticationType $AuthenticationType -SkipCertificateCheck $SkipCertificateCheck
 
     $TestSafeMemberParameters = @{
         Ensure                                 = $Ensure
@@ -204,7 +187,6 @@ function Set-SafeMember {
             Get-PASSafeMember -SafeName $SafeName -MemberName $MemberName | Remove-PASSafeMember
         }
 
-        Close-PASSession -ErrorAction SilentlyContinue
     }
 }
 
@@ -275,17 +257,9 @@ function Test-SafeMember {
         [bool] $SkipCertificateCheck
     )
 
+    Get-CyberArkSession -PvwaUrl $PvwaUrl -Credential $Credential -AuthenticationType $AuthenticationType -SkipCertificateCheck $SkipCertificateCheck
+
     $DesiredState = $false
-
-    $SessionParameters = @{
-        BaseUri           = $PvwaUrl
-        Credential        = $Credential
-        Type              = $AuthenticationType
-        concurrentSession = $true
-    }
-    if ($SkipCertificateCheck) { $SessionParameters.Add('SkipCertificateCheck', $true) }
-
-    New-PASSession @SessionParameters
 
     try {
         $ResourceExists = Get-PASSafeMember -SafeName $SafeName -MemberName $MemberName -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Permissions | Where-Object { $_.UseAccounts -eq $UseAccounts -and $_.RetrieveAccounts -eq $RetrieveAccounts -and $_.ListAccounts -eq $ListAccounts -and $_.AddAccounts -eq $AddAccounts -and $_.UpdateAccountContent -eq $UpdateAccountContent -and $_.UpdateAccountProperties -eq $UpdateAccountProperties -and $_.InitiateCPMAccountManagementOperations -eq $InitiateCPMAccountManagementOperations -and $_.SpecifyNextAccountContent -eq $SpecifyNextAccountContent -and $_.RenameAccounts -eq $RenameAccounts -and $_.DeleteAccounts -eq $DeleteAccounts -and $_.UnlockAccounts -eq $UnlockAccounts -and $_.ManageSafe -eq $ManageSafe -and $_.ManageSafeMembers -eq $ManageSafeMembers -and $_.BackupSafe -eq $BackupSafe -and $_.ViewAuditLog -eq $ViewAuditLog -and $_.ViewSafeMembers -eq $ViewSafeMembers -and $_.requestsAuthorizationLevel1 -eq $requestsAuthorizationLevel1 -and $_.requestsAuthorizationLevel2 -eq $requestsAuthorizationLevel2 -and $_.AccessWithoutConfirmation -eq $AccessWithoutConfirmation -and $_.CreateFolders -eq $CreateFolders -and $_.DeleteFolders -eq $DeleteFolders -and $_.MoveAccountsAndFolders -eq $MoveAccountsAndFolders }
@@ -300,8 +274,6 @@ function Test-SafeMember {
     if ($Ensure -eq [Ensure]::Absent -and $null -eq $ResourceExists) {
         $DesiredState = $true
     }
-
-    Close-PASSession -ErrorAction SilentlyContinue
 
     $DesiredState
 }

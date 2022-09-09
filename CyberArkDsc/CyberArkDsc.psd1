@@ -67,6 +67,7 @@ Copyright = '(c) Tim Schindler. All rights reserved.'
 
 # Modules to import as nested modules of the module specified in RootModule/ModuleToProcess
 NestedModules = @(
+    '.\CyberArkDsc.Common\Common.psd1',
     '.\CYA_Account\CYA_Account.psd1',
     '.\CYA_Safe\CYA_Safe.psd1',
     '.\CYA_SafeMember\CYA_SafeMember.psd1'
