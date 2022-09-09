@@ -5,20 +5,13 @@
 
 function Get-SafeMember {
     param (
-        [ValidateSet('Present', 'Absent')]
-        [string]$Ensure = 'Present',
+        [Ensure]$Ensure,
 
         [parameter(Mandatory = $true)]
         [ValidateNotNullOrEmpty()]
         [String]$SafeName,
 
-        [String]$ManagingCPM,
-
-        [String]$NumberOfDaysRetention,
-
-        [String]$NumberOfVersionsRetention,
-
-        [String]$Description,
+        [String]$MemberName,
 
         [parameter(Mandatory = $true)]
         [String] $PvwaUrl,
@@ -32,7 +25,7 @@ function Get-SafeMember {
         [bool] $SkipCertificateCheck
     )
 
-    $EnsureReturn = 'Absent'
+    $EnsureReturn = [Ensure]::Absent
 
     $SessionParameters = @{
         BaseUri           = $PvwaUrl
@@ -44,41 +37,100 @@ function Get-SafeMember {
 
     New-PASSession @SessionParameters
 
-    $ResourceExists = Get-PASSafe -SafeName $SafeName -ErrorAction SilentlyContinue
+    try {
+        $ResourceExists = Get-PASSafeMember -SafeName $SafeName -MemberName $MemberName -ErrorAction SilentlyContinue
+        $EnsureReturn = [Ensure]::Present
+    } catch {
+        $EnsureReturn = [Ensure]::Absent
+    } finally {
+        Close-PASSession -ErrorAction SilentlyContinue
 
-    if ($ResourceExists) {
-        $EnsureReturn = 'Present'
+        @{
+            Ensure                                 = $EnsureReturn
+            SafeName                               = $ResourceExists.SafeName
+            MemberName                             = $ResourceExists.UserName
+            UseAccounts                            = $ResourceExists.Permissions.useAccounts
+            RetrieveAccounts                       = $ResourceExists.Permissions.retrieveAccounts
+            ListAccounts                           = $ResourceExists.Permissions.listAccounts
+            AddAccounts                            = $ResourceExists.Permissions.addAccounts
+            UpdateAccountContent                   = $ResourceExists.Permissions.updateAccountContent
+            UpdateAccountProperties                = $ResourceExists.Permissions.updateAccountProperties
+            InitiateCPMAccountManagementOperations = $ResourceExists.Permissions.initiateCPMAccountManagementOperations
+            SpecifyNextAccountContent              = $ResourceExists.Permissions.specifyNextAccountContent
+            RenameAccounts                         = $ResourceExists.Permissions.renameAccounts
+            DeleteAccounts                         = $ResourceExists.Permissions.deleteAccounts
+            UnlockAccounts                         = $ResourceExists.Permissions.unlockAccounts
+            ManageSafe                             = $ResourceExists.Permissions.manageSafe
+            ManageSafeMembers                      = $ResourceExists.Permissions.manageSafeMembers
+            BackupSafe                             = $ResourceExists.Permissions.backupSafe
+            ViewAuditLog                           = $ResourceExists.Permissions.viewAuditLog
+            ViewSafeMembers                        = $ResourceExists.Permissions.viewSafeMembers
+            AccessWithoutConfirmation              = $ResourceExists.Permissions.accessWithoutConfirmation
+            CreateFolders                          = $ResourceExists.Permissions.createFolders
+            DeleteFolders                          = $ResourceExists.Permissions.deleteFolders
+            MoveAccountsandFolders                 = $ResourceExists.Permissions.moveAccountsandFolders
+            RequestsAuthorizationLevel1            = $ResourceExists.Permissions.requestsAuthorizationLevel1
+            RequestsAuthorizationLevel2            = $ResourceExists.Permissions.requestsAuthorizationLevel2
+        }
     }
 
-    Close-PASSession -ErrorAction SilentlyContinue
-
-    @{
-        Ensure                    = $EnsureReturn
-        SafeName                  = $ResourceExists.SafeName
-        ManagingCPM               = $ResourceExists.ManagingCPM
-        NumberOfDaysRetention     = $ResourceExists.NumberOfDaysRetention
-        NumberOfVersionsRetention = $ResourceExists.NumberOfVersionsRetention
-        Description               = $ResourceExists.Description
-    }
-    }
+}
 
 function Set-SafeMember {
     param (
+        [Ensure]$Ensure,
 
-        [ValidateSet('Present', 'Absent')]
-        [string]$Ensure = 'Present',
+        [string]$SafeName,
 
-        [parameter(Mandatory = $true)]
-        [ValidateNotNullOrEmpty()]
-        [String]$SafeName,
+        [string]$MemberName,
 
-        [String]$ManagingCPM,
+        [string]$SearchIn,
 
-        [String]$NumberOfDaysRetention,
+        [datetime]$MembershipExpirationDate,
 
-        [String]$NumberOfVersionsRetention,
+        [boolean]$UseAccounts,
 
-        [String]$Description,
+        [boolean]$RetrieveAccounts,
+
+        [boolean]$ListAccounts,
+
+        [boolean]$AddAccounts,
+
+        [boolean]$UpdateAccountContent,
+
+        [boolean]$UpdateAccountProperties,
+
+        [boolean]$InitiateCPMAccountManagementOperations,
+
+        [boolean]$SpecifyNextAccountContent,
+
+        [boolean]$RenameAccounts,
+
+        [boolean]$DeleteAccounts,
+
+        [boolean]$UnlockAccounts,
+
+        [boolean]$ManageSafe,
+
+        [boolean]$ManageSafeMembers,
+
+        [boolean]$BackupSafe,
+
+        [boolean]$ViewAuditLog,
+
+        [boolean]$ViewSafeMembers,
+
+        [boolean]$requestsAuthorizationLevel1,
+
+        [boolean]$requestsAuthorizationLevel2,
+
+        [boolean]$AccessWithoutConfirmation,
+
+        [boolean]$CreateFolders,
+
+        [boolean]$DeleteFolders,
+
+        [boolean]$MoveAccountsAndFolders,
 
         [parameter(Mandatory = $true)]
         [String] $PvwaUrl,
@@ -102,44 +154,54 @@ function Set-SafeMember {
 
     New-PASSession @SessionParameters
 
-    $TestSafeParameters = @{
-        Ensure = $Ensure
-        SafeName = $SafeName
-        ManagingCPM = $ManagingCPM
-        Description = $Description
+    $TestSafeMemberParameters = @{
+        Ensure                                 = $Ensure
 
-        PvwaUrl = $PvwaUrl
-        AuthenticationType = $AuthenticationType
-        Credential = $Credential
-        SkipCertificateCheck = $SkipCertificateCheck
+        SafeName                               = $SafeName
+        MemberName                             = $MemberName
+        UseAccounts                            = $UseAccounts
+        RetrieveAccounts                       = $RetrieveAccounts
+        ListAccounts                           = $ListAccounts
+        AddAccounts                            = $AddAccounts
+        UpdateAccountContent                   = $UpdateAccountContent
+        UpdateAccountProperties                = $UpdateAccountProperties
+        InitiateCPMAccountManagementOperations = $InitiateCPMAccountManagementOperations
+        SpecifyNextAccountContent              = $SpecifyNextAccountContent
+        RenameAccounts                         = $RenameAccounts
+        DeleteAccounts                         = $DeleteAccounts
+        UnlockAccounts                         = $UnlockAccounts
+        ManageSafe                             = $ManageSafe
+        ManageSafeMembers                      = $ManageSafeMembers
+        BackupSafe                             = $BackupSafe
+        ViewAuditLog                           = $ViewAuditLog
+        ViewSafeMembers                        = $ViewSafeMembers
+        requestsAuthorizationLevel1            = $requestsAuthorizationLevel1
+        requestsAuthorizationLevel2            = $requestsAuthorizationLevel2
+        AccessWithoutConfirmation              = $AccessWithoutConfirmation
+        CreateFolders                          = $CreateFolders
+        DeleteFolders                          = $DeleteFolders
+        MoveAccountsAndFolders                 = $MoveAccountsAndFolders
+
+        PvwaUrl                                = $PvwaUrl
+        AuthenticationType                     = $AuthenticationType
+        Credential                             = $Credential
+        SkipCertificateCheck                   = $SkipCertificateCheck
     }
 
-    if ($NumberOfDaysRetention) {
-        $TestSafeParameters.Add('NumberOfDaysRetention', $NumberOfDaysRetention)
-    }
-    if ($NumberOfVersionsRetention) {
-        $TestSafeParameters.Add('NumberOfVersionsRetention', $NumberOfVersionsRetention)
+    if ($MembershipExpirationDate) {
+        $TestSafeMemberParameters.Add('MembershipExpirationDate', $MembershipExpirationDate)
     }
 
-    $DesiredState = Test-SafeMember @TestSafeParameters
+    $DesiredState = Test-SafeMember @TestSafeMemberParameters
 
     if ($DesiredState -eq $false) {
 
-        if ($Ensure -eq 'Present') {
-
-            $NewResourceProperties = @{
-                SafeName = $SafeName
-            }
-            if ($ManagingCPM) { $NewResourceProperties.Add('ManagingCPM', $ManagingCPM) }
-            if ($Description) { $NewResourceProperties.Add('Description', $Description) }
-            if ($NumberOfDaysRetention) { $NewResourceProperties.Add('NumberOfDaysRetention', $NumberOfDaysRetention) }
-            if ($NumberOfVersionsRetention) { $NewResourceProperties.Add('NumberOfVersionsRetention', $NumberOfVersionsRetention) }
-
-            Add-PASSafe @NewResourceProperties
+        if ($Ensure -eq [Ensure]::Present) {
+            Add-PASSafeMember -SafeName $SafeName -MemberName $MemberName -UseAccounts $UseAccounts -RetrieveAccounts $RetrieveAccounts -ListAccounts $ListAccounts -AddAccounts $AddAccounts -UpdateAccountContent $UpdateAccountContent -UpdateAccountProperties $UpdateAccountProperties -InitiateCPMAccountManagementOperations $InitiateCPMAccountManagementOperations -SpecifyNextAccountContent $SpecifyNextAccountContent -RenameAccounts $RenameAccounts -DeleteAccounts $DeleteAccounts -UnlockAccounts $UnlockAccounts -ManageSafe $ManageSafe -ManageSafeMembers $ManageSafeMembers -BackupSafe $BackupSafe -ViewAuditLog $ViewAuditLog -ViewSafeMembers $ViewSafeMembers -requestsAuthorizationLevel1 $requestsAuthorizationLevel1 -requestsAuthorizationLevel2 $requestsAuthorizationLevel2 -AccessWithoutConfirmation $AccessWithoutConfirmation -CreateFolders $CreateFolders -DeleteFolders $DeleteFolders -MoveAccountsAndFolders $MoveAccountsAndFolders
         }
 
-        if ($Ensure -eq 'Absent') {
-            Get-PASSafe -SafeName $SafeName | Remove-PASSafe
+        if ($Ensure -eq [Ensure]::Absent) {
+            Get-PASSafeMember -SafeName $SafeName -MemberName $MemberName | Remove-PASSafeMember
         }
 
         Close-PASSession -ErrorAction SilentlyContinue
@@ -149,20 +211,57 @@ function Set-SafeMember {
 
 function Test-SafeMember {
     param (
-        [ValidateSet('Present', 'Absent')]
-        [string]$Ensure = 'Present',
+        [Ensure]$Ensure,
 
-        [parameter(Mandatory = $true)]
-        [ValidateNotNullOrEmpty()]
-        [String]$SafeName,
+        [string]$SafeName,
 
-        [String]$ManagingCPM,
+        [string]$MemberName,
 
-        [String]$NumberOfDaysRetention,
+        [datetime]$MembershipExpirationDate,
 
-        [String]$NumberOfVersionsRetention,
+        [boolean]$UseAccounts,
 
-        [String]$Description,
+        [boolean]$RetrieveAccounts,
+
+        [boolean]$ListAccounts,
+
+        [boolean]$AddAccounts,
+
+        [boolean]$UpdateAccountContent,
+
+        [boolean]$UpdateAccountProperties,
+
+        [boolean]$InitiateCPMAccountManagementOperations,
+
+        [boolean]$SpecifyNextAccountContent,
+
+        [boolean]$RenameAccounts,
+
+        [boolean]$DeleteAccounts,
+
+        [boolean]$UnlockAccounts,
+
+        [boolean]$ManageSafe,
+
+        [boolean]$ManageSafeMembers,
+
+        [boolean]$BackupSafe,
+
+        [boolean]$ViewAuditLog,
+
+        [boolean]$ViewSafeMembers,
+
+        [boolean]$requestsAuthorizationLevel1,
+
+        [boolean]$requestsAuthorizationLevel2,
+
+        [boolean]$AccessWithoutConfirmation,
+
+        [boolean]$CreateFolders,
+
+        [boolean]$DeleteFolders,
+
+        [boolean]$MoveAccountsAndFolders,
 
         [parameter(Mandatory = $true)]
         [String] $PvwaUrl,
@@ -189,25 +288,16 @@ function Test-SafeMember {
     New-PASSession @SessionParameters
 
     try {
-
-        $ResourceExists = Get-PASSafe -SafeName $SafeName -ErrorAction SilentlyContinue | Where-Object { $_.ManagingCPM -eq $ManagingCPM -and $_.Description -eq $Description }
-
-        if ($NumberOfDaysRetention) {
-            $ResourceExists = $ResourceExists | Where-Object { $_.NumberOfDaysRetention -eq $NumberOfDaysRetention }
-        }
-        if ($NumberOfVersionsRetention) {
-            $ResourceExists = $ResourceExists | Where-Object { $_.NumberOfVersionsRetention -eq $NumberOfVersionsRetention }
-        }
-
+        $ResourceExists = Get-PASSafeMember -SafeName $SafeName -MemberName $MemberName -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Permissions | Where-Object { $_.UseAccounts -eq $UseAccounts -and $_.RetrieveAccounts -eq $RetrieveAccounts -and $_.ListAccounts -eq $ListAccounts -and $_.AddAccounts -eq $AddAccounts -and $_.UpdateAccountContent -eq $UpdateAccountContent -and $_.UpdateAccountProperties -eq $UpdateAccountProperties -and $_.InitiateCPMAccountManagementOperations -eq $InitiateCPMAccountManagementOperations -and $_.SpecifyNextAccountContent -eq $SpecifyNextAccountContent -and $_.RenameAccounts -eq $RenameAccounts -and $_.DeleteAccounts -eq $DeleteAccounts -and $_.UnlockAccounts -eq $UnlockAccounts -and $_.ManageSafe -eq $ManageSafe -and $_.ManageSafeMembers -eq $ManageSafeMembers -and $_.BackupSafe -eq $BackupSafe -and $_.ViewAuditLog -eq $ViewAuditLog -and $_.ViewSafeMembers -eq $ViewSafeMembers -and $_.requestsAuthorizationLevel1 -eq $requestsAuthorizationLevel1 -and $_.requestsAuthorizationLevel2 -eq $requestsAuthorizationLevel2 -and $_.AccessWithoutConfirmation -eq $AccessWithoutConfirmation -and $_.CreateFolders -eq $CreateFolders -and $_.DeleteFolders -eq $DeleteFolders -and $_.MoveAccountsAndFolders -eq $MoveAccountsAndFolders }
     } catch {
         $ResourceExists = $null
     }
 
-    if ($Ensure -eq 'Present' -and $null -ne $ResourceExists) {
+    if ($Ensure -eq [Ensure]::Present -and $null -ne $ResourceExists) {
         $DesiredState = $true
     }
 
-    if ($Ensure -eq 'Absent' -and $null -eq $ResourceExists) {
+    if ($Ensure -eq [Ensure]::Absent -and $null -eq $ResourceExists) {
         $DesiredState = $true
     }
 
@@ -225,16 +315,79 @@ class CYA_SafeMember {
     [string]$SafeName
 
     [DscProperty(Key)]
-    [string]$SafeMember
+    [string]$MemberName
 
     [DscProperty()]
-    [String]$SearchIn
+    [String]$SearchIn = $null
 
     [DscProperty()]
     [datetime]$MembershipExpirationDate
 
     [DscProperty()]
-    [string]$Description
+    [boolean]$UseAccounts = $false
+
+    [DscProperty()]
+    [boolean]$RetrieveAccounts = $false
+
+    [DscProperty()]
+    [boolean]$ListAccounts = $false
+
+    [DscProperty()]
+    [boolean]$AddAccounts = $false
+
+    [DscProperty()]
+    [boolean]$UpdateAccountContent = $false
+
+    [DscProperty()]
+    [boolean]$UpdateAccountProperties = $false
+
+    [DscProperty()]
+    [boolean]$InitiateCPMAccountManagementOperations = $false
+
+    [DscProperty()]
+    [boolean]$SpecifyNextAccountContent = $false
+
+    [DscProperty()]
+    [boolean]$RenameAccounts = $false
+
+    [DscProperty()]
+    [boolean]$DeleteAccounts = $false
+
+    [DscProperty()]
+    [boolean]$UnlockAccounts = $false
+
+    [DscProperty()]
+    [boolean]$ManageSafe = $false
+
+    [DscProperty()]
+    [boolean]$ManageSafeMembers = $false
+
+    [DscProperty()]
+    [boolean]$BackupSafe = $false
+
+    [DscProperty()]
+    [boolean]$ViewAuditLog = $false
+
+    [DscProperty()]
+    [boolean]$ViewSafeMembers = $false
+
+    [DscProperty()]
+    [boolean]$requestsAuthorizationLevel1 = $false
+
+    [DscProperty()]
+    [boolean]$requestsAuthorizationLevel2 = $false
+
+    [DscProperty()]
+    [boolean]$AccessWithoutConfirmation = $false
+
+    [DscProperty()]
+    [boolean]$CreateFolders = $false
+
+    [DscProperty()]
+    [boolean]$DeleteFolders = $false
+
+    [DscProperty()]
+    [boolean]$MoveAccountsAndFolders = $false
 
     [DscProperty(Mandatory)]
     [string]$PvwaUrl
@@ -249,43 +402,95 @@ class CYA_SafeMember {
     [bool]$SkipCertificateCheck
 
     [CYA_SafeMember] Get() {
-        $Get = Get-SafeMember -Ensure $this.Ensure -SafeName $this.SafeName -ManagingCPM $this.ManagingCPM -NumberOfDaysRetention $this.NumberOfDaysRetention -NumberOfVersionsRetention $this.NumberOfVersionsRetention -Description $this.Description -PvwaUrl $this.PvwaUrl -AuthenticationType $this.AuthenticationType -Credential $this.Credential -SkipCertificateCheck $this.SkipCertificateCheck
+        $Get = Get-SafeMember -Ensure $this.Ensure -SafeName $this.SafeName -MemberName $this.MemberName -PvwaUrl $this.PvwaUrl -AuthenticationType $this.AuthenticationType -Credential $this.Credential -SkipCertificateCheck $this.SkipCertificateCheck
         return $Get
     }
 
     [void] Set() {
-        $SetSafeParameters = @{
-            Ensure               = $this.Ensure
-            SafeName             = $this.SafeName
-            ManagingCPM          = $this.ManagingCPM
-            Description          = $this.Description
-            PvwaUrl              = $this.PvwaUrl
-            AuthenticationType   = $this.AuthenticationType
-            Credential           = $this.Credential
-            SkipCertificateCheck = $this.SkipCertificateCheck
-        }
-        if ($this.NumberOfDaysRetention) { $SetSafeParameters.Add('NumberOfDaysRetention', $this.NumberOfDaysRetention) }
-        if ($this.NumberOfVersionsRetention) { $SetSafeParameters.Add('NumberOfVersionsRetention', $this.NumberOfVersionsRetention) }
+        $SetSafeMemberParameters = @{
+            Ensure                                 = $this.Ensure
 
-        Set-SafeMember @SetSafeParameters
+            SafeName                               = $this.SafeName
+            MemberName                             = $this.MemberName
+            UseAccounts                            = $this.UseAccounts
+            RetrieveAccounts                       = $this.RetrieveAccounts
+            ListAccounts                           = $this.ListAccounts
+            AddAccounts                            = $this.AddAccounts
+            UpdateAccountContent                   = $this.UpdateAccountContent
+            UpdateAccountProperties                = $this.UpdateAccountProperties
+            InitiateCPMAccountManagementOperations = $this.InitiateCPMAccountManagementOperations
+            SpecifyNextAccountContent              = $this.SpecifyNextAccountContent
+            RenameAccounts                         = $this.RenameAccounts
+            DeleteAccounts                         = $this.DeleteAccounts
+            UnlockAccounts                         = $this.UnlockAccounts
+            ManageSafe                             = $this.ManageSafe
+            ManageSafeMembers                      = $this.ManageSafeMembers
+            BackupSafe                             = $this.BackupSafe
+            ViewAuditLog                           = $this.ViewAuditLog
+            ViewSafeMembers                        = $this.ViewSafeMembers
+            requestsAuthorizationLevel1            = $this.requestsAuthorizationLevel1
+            requestsAuthorizationLevel2            = $this.requestsAuthorizationLevel2
+            AccessWithoutConfirmation              = $this.AccessWithoutConfirmation
+            CreateFolders                          = $this.CreateFolders
+            DeleteFolders                          = $this.DeleteFolders
+            MoveAccountsAndFolders                 = $this.MoveAccountsAndFolders
+
+            PvwaUrl                                = $this.PvwaUrl
+            AuthenticationType                     = $this.AuthenticationType
+            Credential                             = $this.Credential
+            SkipCertificateCheck                   = $this.SkipCertificateCheck
+        }
+
+        if ($this.MembershipExpirationDate) {
+            $SetSafeMemberParameters.Add('MembershipExpirationDate', $this.MembershipExpirationDate)
+        }
+        if ($this.SearchIn) {
+            $SetSafeMemberParameters.Add('SearchIn', $this.SearchIn)
+        }
+
+        Set-SafeMember @SetSafeMemberParameters
     }
 
     [bool] Test() {
-        $TestSafeParameters = @{
-            Ensure               = $this.Ensure
-            SafeName             = $this.SafeName
-            ManagingCPM          = $this.ManagingCPM
-            Description          = $this.Description
-            PvwaUrl              = $this.PvwaUrl
-            AuthenticationType   = $this.AuthenticationType
-            Credential           = $this.Credential
-            SkipCertificateCheck = $this.SkipCertificateCheck
-        }
-        if ($this.NumberOfDaysRetention) { $TestSafeParameters.Add('NumberOfDaysRetention', $this.NumberOfDaysRetention) }
-        if ($this.NumberOfVersionsRetention) { $TestSafeParameters.Add('NumberOfVersionsRetention', $this.NumberOfVersionsRetention) }
+        $TestSafeMemberParameters = @{
+            Ensure                                 = $this.Ensure
 
-        $Test = Test-SafeMember @TestSafeParameters
+            SafeName                               = $this.SafeName
+            MemberName                             = $this.MemberName
+            UseAccounts                            = $this.UseAccounts
+            RetrieveAccounts                       = $this.RetrieveAccounts
+            ListAccounts                           = $this.ListAccounts
+            AddAccounts                            = $this.AddAccounts
+            UpdateAccountContent                   = $this.UpdateAccountContent
+            UpdateAccountProperties                = $this.UpdateAccountProperties
+            InitiateCPMAccountManagementOperations = $this.InitiateCPMAccountManagementOperations
+            SpecifyNextAccountContent              = $this.SpecifyNextAccountContent
+            RenameAccounts                         = $this.RenameAccounts
+            DeleteAccounts                         = $this.DeleteAccounts
+            UnlockAccounts                         = $this.UnlockAccounts
+            ManageSafe                             = $this.ManageSafe
+            ManageSafeMembers                      = $this.ManageSafeMembers
+            BackupSafe                             = $this.BackupSafe
+            ViewAuditLog                           = $this.ViewAuditLog
+            ViewSafeMembers                        = $this.ViewSafeMembers
+            requestsAuthorizationLevel1            = $this.requestsAuthorizationLevel1
+            requestsAuthorizationLevel2            = $this.requestsAuthorizationLevel2
+            AccessWithoutConfirmation              = $this.AccessWithoutConfirmation
+            CreateFolders                          = $this.CreateFolders
+            DeleteFolders                          = $this.DeleteFolders
+            MoveAccountsAndFolders                 = $this.MoveAccountsAndFolders
+
+            PvwaUrl                                = $this.PvwaUrl
+            AuthenticationType                     = $this.AuthenticationType
+            Credential                             = $this.Credential
+            SkipCertificateCheck                   = $this.SkipCertificateCheck
+        }
+
+        if ($this.MembershipExpirationDate) {
+            $TestSafeMemberParameters.Add('MembershipExpirationDate', $this.MembershipExpirationDate)
+        }
+
+        $Test = Test-SafeMember @TestSafeMemberParameters
         return $Test
     }
 }
-

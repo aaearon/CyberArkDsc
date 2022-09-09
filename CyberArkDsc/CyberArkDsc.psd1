@@ -69,7 +69,7 @@ Copyright = '(c) Tim Schindler. All rights reserved.'
 NestedModules = @(
     '.\CYA_Account\CYA_Account.psd1',
     '.\CYA_Safe\CYA_Safe.psd1',
-    '.\CYA_Safe\CYA_SafeMember.psd1'
+    '.\CYA_SafeMember\CYA_SafeMember.psd1'
 )
 
 # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
