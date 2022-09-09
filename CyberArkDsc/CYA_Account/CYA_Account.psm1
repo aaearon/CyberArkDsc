@@ -38,17 +38,7 @@ function Get-Account {
         [bool] $SkipCertificateCheck
     )
 
-    $EnsureReturn = [Ensure]::Absent
-
-    $SessionParameters = @{
-        BaseUri           = $PvwaUrl
-        Credential        = $Credential
-        Type              = $AuthenticationType
-        concurrentSession = $true
-    }
-    if ($SkipCertificateCheck) { $SessionParameters.Add('SkipCertificateCheck', $true) }
-
-    New-PASSession @SessionParameters
+    Get-CyberArkSession -PvwaUrl $PvwaUrl -Credential $Credential -AuthenticationType $AuthenticationType -SkipCertificateCheck $SkipCertificateCheck
 
     $ResourceExists = Get-PASAccount -safeName $SafeName -search "$UserName $Address $PlatformId" | Where-Object { $_.UserName -eq $UserName -and $_.Address -eq $Address -and $_.PlatformId -eq $PlatformId }
 
@@ -109,15 +99,7 @@ function Set-Account {
         [bool] $SkipCertificateCheck
     )
 
-    $SessionParameters = @{
-        BaseUri           = $PvwaUrl
-        Credential        = $Credential
-        Type              = $AuthenticationType
-        concurrentSession = $true
-    }
-    if ($SkipCertificateCheck) { $SessionParameters.Add('SkipCertificateCheck', $true) }
-
-    New-PASSession @SessionParameters
+    Get-CyberArkSession -PvwaUrl $PvwaUrl -Credential $Credential -AuthenticationType $AuthenticationType -SkipCertificateCheck $SkipCertificateCheck
 
     $DesiredState = Test-Account -Ensure $Ensure -UserName $UserName -Address $Address -PlatformId $PlatformId -SafeName $SafeName -PvwaUrl $PvwaUrl -AuthenticationType $AuthenticationType -Credential $Credential -SkipCertificateCheck:$SkipCertificateCheck
 
@@ -185,15 +167,7 @@ function Test-Account {
 
     $DesiredState = $false
 
-    $SessionParameters = @{
-        BaseUri           = $PvwaUrl
-        Credential        = $Credential
-        Type              = $AuthenticationType
-        concurrentSession = $true
-    }
-    if ($SkipCertificateCheck) { $SessionParameters.Add('SkipCertificateCheck', $true) }
-
-    New-PASSession @SessionParameters
+    Get-CyberArkSession -PvwaUrl $PvwaUrl -Credential $Credential -AuthenticationType $AuthenticationType -SkipCertificateCheck $SkipCertificateCheck
 
     $ResourceExists = Get-PASAccount -safeName $SafeName -search "$UserName $Address $PlatformId" | Where-Object { $_.UserName -eq $UserName -and $_.Address -eq $Address -and $_.PlatformId -eq $PlatformId }
 

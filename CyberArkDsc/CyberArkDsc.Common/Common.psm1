@@ -7,7 +7,7 @@
     )
 
     try {
-        Get-PASSuser
+        Get-PASServer
     } catch {
 
         $SessionParameters = @{

@@ -33,15 +33,7 @@ function Get-Safe {
 
     $EnsureReturn = [Ensure]::Absent
 
-    $SessionParameters = @{
-        BaseUri           = $PvwaUrl
-        Credential        = $Credential
-        Type              = $AuthenticationType
-        concurrentSession = $true
-    }
-    if ($SkipCertificateCheck) { $SessionParameters.Add('SkipCertificateCheck', $true) }
-
-    New-PASSession @SessionParameters
+    Get-CyberArkSession -PvwaUrl $PvwaUrl -Credential $Credential -AuthenticationType $AuthenticationType -SkipCertificateCheck $SkipCertificateCheck
 
     $ResourceExists = Get-PASSafe -SafeName $SafeName -ErrorAction SilentlyContinue
 
@@ -89,15 +81,7 @@ function Set-Safe {
         [bool] $SkipCertificateCheck
     )
 
-    $SessionParameters = @{
-        BaseUri           = $PvwaUrl
-        Credential        = $Credential
-        Type              = $AuthenticationType
-        concurrentSession = $true
-    }
-    if ($SkipCertificateCheck) { $SessionParameters.Add('SkipCertificateCheck', $true) }
-
-    New-PASSession @SessionParameters
+    Get-CyberArkSession -PvwaUrl $PvwaUrl -Credential $Credential -AuthenticationType $AuthenticationType -SkipCertificateCheck $SkipCertificateCheck
 
     $TestSafeParameters = @{
         Ensure = $Ensure
@@ -174,15 +158,7 @@ function Test-Safe {
 
     $DesiredState = $false
 
-    $SessionParameters = @{
-        BaseUri           = $PvwaUrl
-        Credential        = $Credential
-        Type              = $AuthenticationType
-        concurrentSession = $true
-    }
-    if ($SkipCertificateCheck) { $SessionParameters.Add('SkipCertificateCheck', $true) }
-
-    New-PASSession @SessionParameters
+    Get-CyberArkSession -PvwaUrl $PvwaUrl -Credential $Credential -AuthenticationType $AuthenticationType -SkipCertificateCheck $SkipCertificateCheck
 
     try {
 

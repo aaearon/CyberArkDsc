@@ -3,8 +3,6 @@
     Present
 }
 
-
-
 function Get-SafeMember {
     param (
         [Ensure]$Ensure,
