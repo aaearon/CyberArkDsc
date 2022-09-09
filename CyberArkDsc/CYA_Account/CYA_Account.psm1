@@ -5,7 +5,7 @@
 
 function Get-Account {
     param (
-        [Ensure]$Ensure = 'Present',
+        [Ensure]$Ensure,
 
         [parameter(Mandatory = $true)]
         [ValidateNotNullOrEmpty()]
@@ -38,7 +38,7 @@ function Get-Account {
         [bool] $SkipCertificateCheck
     )
 
-    $EnsureReturn = 'Absent'
+    $EnsureReturn = [Ensure]::Absent
 
     $SessionParameters = @{
         BaseUri           = $PvwaUrl
@@ -53,7 +53,7 @@ function Get-Account {
     $ResourceExists = Get-PASAccount -safeName $SafeName -search "$UserName $Address $PlatformId" | Where-Object { $_.UserName -eq $UserName -and $_.Address -eq $Address -and $_.PlatformId -eq $PlatformId }
 
     if ($ResourceExists) {
-        $EnsureReturn = 'Present'
+        $EnsureReturn = [Ensure]::Present
     }
 
     Close-PASSession -ErrorAction SilentlyContinue
@@ -73,7 +73,7 @@ function Get-Account {
 
 function Set-Account {
     param (
-        [Ensure]$Ensure = 'Present',
+        [Ensure]$Ensure,
 
         [parameter(Mandatory = $true)]
         [ValidateNotNullOrEmpty()]
@@ -123,7 +123,7 @@ function Set-Account {
 
     if ($DesiredState -eq $false) {
 
-        if ($Ensure -eq 'Present') {
+        if ($Ensure -eq [Ensure]::Present) {
 
             $NewAccountProperties = @{
                 UserName   = $UserName
@@ -136,7 +136,7 @@ function Set-Account {
             Add-PASAccount @NewAccountProperties
         }
 
-        if ($Ensure -eq 'Absent') {
+        if ($Ensure -eq [Ensure]::Absent) {
             Get-PASAccount -safeName $SafeName -search "$UserName $Address $PlatformId" | Where-Object { $_.UserName -eq $UserName -and $_.Address -eq $Address -and $_.PlatformId -eq $PlatformId } | Remove-PASAccount
         }
 
@@ -147,7 +147,7 @@ function Set-Account {
 
 function Test-Account {
     param (
-        [Ensure]$Ensure = 'Present',
+        [Ensure]$Ensure,
 
         [parameter(Mandatory = $true)]
         [ValidateNotNullOrEmpty()]
@@ -197,11 +197,11 @@ function Test-Account {
 
     $ResourceExists = Get-PASAccount -safeName $SafeName -search "$UserName $Address $PlatformId" | Where-Object { $_.UserName -eq $UserName -and $_.Address -eq $Address -and $_.PlatformId -eq $PlatformId }
 
-    if ($Ensure -eq 'Present' -and $null -ne $ResourceExists) {
+    if ($Ensure -eq [Ensure]::Present -and $null -ne $ResourceExists) {
         $DesiredState = $true
     }
 
-    if ($Ensure -eq 'Absent' -and $null -eq $ResourceExists) {
+    if ($Ensure -eq [Ensure]::Absent -and $null -eq $ResourceExists) {
         $DesiredState = $true
     }
 
