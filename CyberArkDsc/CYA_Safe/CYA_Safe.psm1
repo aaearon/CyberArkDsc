@@ -5,8 +5,7 @@
 
 function Get-Safe {
     param (
-        [ValidateSet('Present', 'Absent')]
-        [string]$Ensure = 'Present',
+        [Ensure]$Ensure = 'Present',
 
         [parameter(Mandatory = $true)]
         [ValidateNotNullOrEmpty()]
@@ -64,9 +63,7 @@ function Get-Safe {
 
 function Set-Safe {
     param (
-
-        [ValidateSet('Present', 'Absent')]
-        [string]$Ensure = 'Present',
+        [Ensure]$Ensure = 'Present',
 
         [parameter(Mandatory = $true)]
         [ValidateNotNullOrEmpty()]
@@ -149,8 +146,7 @@ function Set-Safe {
 
 function Test-Safe {
     param (
-        [ValidateSet('Present', 'Absent')]
-        [string]$Ensure = 'Present',
+        [Ensure]$Ensure = 'Present',
 
         [parameter(Mandatory = $true)]
         [ValidateNotNullOrEmpty()]

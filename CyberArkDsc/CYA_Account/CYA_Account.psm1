@@ -5,8 +5,7 @@
 
 function Get-Account {
     param (
-        [ValidateSet('Present', 'Absent')]
-        [string]$Ensure = 'Present',
+        [Ensure]$Ensure = 'Present',
 
         [parameter(Mandatory = $true)]
         [ValidateNotNullOrEmpty()]
@@ -74,8 +73,7 @@ function Get-Account {
 
 function Set-Account {
     param (
-        [ValidateSet('Present', 'Absent')]
-        [string]$Ensure = 'Present',
+        [Ensure]$Ensure = 'Present',
 
         [parameter(Mandatory = $true)]
         [ValidateNotNullOrEmpty()]
@@ -149,8 +147,7 @@ function Set-Account {
 
 function Test-Account {
     param (
-        [ValidateSet('Present', 'Absent')]
-        [ensure]$Ensure = 'Present',
+        [Ensure]$Ensure = 'Present',
 
         [parameter(Mandatory = $true)]
         [ValidateNotNullOrEmpty()]
