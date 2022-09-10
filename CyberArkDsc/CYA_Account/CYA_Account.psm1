@@ -22,12 +22,7 @@ function Get-Account {
 
     Get-CyberArkSession -PvwaUrl $PvwaUrl -Credential $Credential -AuthenticationType $AuthenticationType -SkipCertificateCheck $SkipCertificateCheck
 
-    $Properties = @{} + $PSBoundParameters
-    $Properties.Remove("PvwaUrl") | Out-Null
-    $Properties.Remove("AuthenticationType") | Out-Null
-    $Properties.Remove("Credential") | Out-Null
-    $Properties.Remove("SkipCertificateCheck") | Out-Null
-    $Properties.Remove("Ensure") | Out-Null
+    $Properties = Get-AccountPropertiesFromPSBoundParameters $PSBoundParameters
 
     $ResourceExists = Get-PASAccount -search "$UserName $Address" | Where-Object { $_.UserName -eq $UserName -and $_.Address -eq $Address }
 
@@ -77,6 +72,7 @@ function Set-Account {
 
     if (-not $DesiredState) {
 
+
         switch ($Ensure) {
 
             'Absent' {
@@ -84,30 +80,29 @@ function Set-Account {
                 }
 
             'Exactly' {
-                $Properties = @{} + $PSBoundParameters
-                $Properties.Remove("PvwaUrl") | Out-Null
-                $Properties.Remove("AuthenticationType") | Out-Null
-                $Properties.Remove("Credential") | Out-Null
-                $Properties.Remove("SkipCertificateCheck") | Out-Null
-                $Properties.Remove("Ensure") | Out-Null
+                $Properties = Get-AccountPropertiesFromPSBoundParameters $PSBoundParameters
 
                 $Account = Get-Account -UserName $UserName -Address $Address -PvwaUrl $PvwaUrl -AuthenticationType $AuthenticationType -Credential $Credential -SkipCertificateCheck:$SkipCertificateCheck
 
-                $Actions = @()
+                if ([string]::isNullOrEmpty($Account.Id)) {
+                    Add-PASAccount @Properties
+                } else
+                {
+                    $Actions = @()
 
-                foreach ($Property in $Properties.GetEnumerator()) {
-                    if ($ResourceExists.$($Property.Name) -ne $Property.Value) {
-                        $Actions += @{
-                            op    = 'replace'
-                            path  = '/platformId'
-                            value = $PlatformId
+                    foreach ($Property in $Properties.GetEnumerator()) {
+                        if ($ResourceExists.$($Property.Name) -ne $Property.Value) {
+                            $Actions += @{
+                                op    = 'replace'
+                                path  = "/$($Property.Name)"
+                                value = $Property.Value
+                            }
                         }
+                    }
+
+                if ($Actions.Count -gt 0) {
+                    Set-PASAccount -ID $Account.ID -operations $Actions
                 }
-            }
-
-
-            if ($Actions.Count -gt 0) {
-                Set-PASAccount -ID $Account.ID -operations $Actions
             }
         }
 
@@ -150,12 +145,7 @@ function Test-Account {
 
     Get-CyberArkSession -PvwaUrl $PvwaUrl -Credential $Credential -AuthenticationType $AuthenticationType -SkipCertificateCheck $SkipCertificateCheck
 
-    $Properties = @{} + $PSBoundParameters
-    $Properties.Remove("Ensure") | Out-Null
-    $Properties.Remove("PvwaUrl") | Out-Null
-    $Properties.Remove("AuthenticationType") | Out-Null
-    $Properties.Remove("Credential") | Out-Null
-    $Properties.Remove("SkipCertificateCheck") | Out-Null
+    $Properties = Get-AccountPropertiesFromPSBoundParameters $PSBoundParameters
 
     $CurrentState = Get-Account @Properties
 
