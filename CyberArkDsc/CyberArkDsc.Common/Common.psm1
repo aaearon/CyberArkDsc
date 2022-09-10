@@ -2,12 +2,12 @@
     param (
         $PvwaUrl,
         $AuthenticationType,
-        $Credential,
+        [pscredential] $Credential,
         $SkipCertificateCheck
     )
 
     try {
-        Get-PASServer
+        Get-PASServer | Out-Null
     } catch {
 
         $SessionParameters = @{

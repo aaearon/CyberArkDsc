@@ -1,5 +1,6 @@
 ﻿enum Ensure {
     Absent
+    Exactly
     Present
 }
 
@@ -7,34 +8,15 @@ function Get-Account {
     param (
         [Ensure]$Ensure,
 
-        [parameter(Mandatory = $true)]
-        [ValidateNotNullOrEmpty()]
         [String]$UserName,
-
-        [parameter(Mandatory = $true)]
-        [ValidateNotNullOrEmpty()]
         [String]$Address,
-
-        [parameter(Mandatory = $true)]
-        [ValidateNotNullOrEmpty()]
         [String]$PlatformId,
-
-        [parameter(Mandatory = $true)]
-        [ValidateNotNullOrEmpty()]
         [String]$SafeName,
-
-        [parameter(Mandatory = $false)]
         [String]$Name,
 
-        [parameter(Mandatory = $true)]
         [String] $PvwaUrl,
-
-        [parameter(Mandatory = $true)]
         [String] $AuthenticationType,
-
-        [parameter(Mandatory = $true)]
         [pscredential] $Credential,
-
         [bool] $SkipCertificateCheck
     )
 
@@ -45,8 +27,6 @@ function Get-Account {
     if ($ResourceExists) {
         $EnsureReturn = [Ensure]::Present
     }
-
-    Close-PASSession -ErrorAction SilentlyContinue
 
     @{
         Ensure                    = $EnsureReturn
@@ -65,64 +45,70 @@ function Set-Account {
     param (
         [Ensure]$Ensure,
 
-        [parameter(Mandatory = $true)]
-        [ValidateNotNullOrEmpty()]
         [String]$UserName,
-
-        [parameter(Mandatory = $true)]
-        [ValidateNotNullOrEmpty()]
         [String]$Address,
-
-        [parameter(Mandatory = $true)]
-        [ValidateNotNullOrEmpty()]
         [String]$PlatformId,
-
-        [parameter(Mandatory = $true)]
-        [ValidateNotNullOrEmpty()]
         [String]$SafeName,
-
-        [parameter(Mandatory = $false)]
         [String]$Name,
 
-        [parameter(Mandatory = $true)]
-        [ValidateNotNullOrEmpty()]
         [String] $PvwaUrl,
-
-        [parameter(Mandatory = $true)]
-        [ValidateNotNullOrEmpty()]
         [String] $AuthenticationType,
-
-        [parameter(Mandatory = $true)]
-        [ValidateNotNullOrEmpty()]
         [pscredential] $Credential,
-
         [bool] $SkipCertificateCheck
     )
 
     Get-CyberArkSession -PvwaUrl $PvwaUrl -Credential $Credential -AuthenticationType $AuthenticationType -SkipCertificateCheck $SkipCertificateCheck
 
-    $DesiredState = Test-Account -Ensure $Ensure -UserName $UserName -Address $Address -PlatformId $PlatformId -SafeName $SafeName -PvwaUrl $PvwaUrl -AuthenticationType $AuthenticationType -Credential $Credential -SkipCertificateCheck:$SkipCertificateCheck
+    $AccountExists = Test-Account -Ensure $Ensure -UserName $UserName -Address $Address -PlatformId $PlatformId -SafeName $SafeName -PvwaUrl $PvwaUrl -AuthenticationType $AuthenticationType -Credential $Credential -SkipCertificateCheck:$SkipCertificateCheck
 
-    if ($DesiredState -eq $false) {
-
-        if ($Ensure -eq [Ensure]::Present) {
-
-            $NewAccountProperties = @{
-                UserName   = $UserName
-                Address    = $Address
-                PlatformId = $PlatformId
-                SafeName   = $SafeName
+    switch ($Ensure) {
+        'Absent' {
+            if ($AccountExists) {
+                Get-PASAccount -safeName $SafeName -search "$UserName $Address" | Where-Object { $_.UserName -eq $UserName -and $_.Address -eq $Address } | Remove-PASAccount
             }
-            if ($Name) { $NewAccountProperties.Add('Name', $Name) }
-
-            Add-PASAccount @NewAccountProperties
         }
+        'Exactly' {
+            $Account = Get-PASAccount -search "$UserName $Address" | Where-Object { $_.UserName -eq $UserName -and $_.Address -eq $Address }
 
-        if ($Ensure -eq [Ensure]::Absent) {
-            Get-PASAccount -safeName $SafeName -search "$UserName $Address $PlatformId" | Where-Object { $_.UserName -eq $UserName -and $_.Address -eq $Address -and $_.PlatformId -eq $PlatformId } | Remove-PASAccount
+            $Actions = @()
+
+            if ( (-not [string]::IsNullOrEmpty($PlatformId)) -and $Account.PlatformId -ne $PlatformId ) {
+                $Action = @{
+                    op    = 'replace'
+                    path  = '/platformId'
+                    value = $PlatformId
+                }
+
+                $Actions += $Action
+            }
+
+            if ( (-not [string]::IsNullOrEmpty($Name)) -and $Account.Name -ne $Name ) {
+                $Action = @{
+                    op    = 'replace'
+                    path  = '/name'
+                    value = $name
+                }
+
+                $Actions += $Action
+            }
+
+            if ($Actions.Count -gt 0) {
+                $Account | Set-PASAccount -operations $Actions
+            }
         }
+        'Present' {
+            if (-not $AccountExists) {
+                $NewAccountProperties = @{
+                    UserName   = $UserName
+                    Address    = $Address
+                    PlatformId = $PlatformId
+                    SafeName   = $SafeName
+                }
+                if ($Name) { $NewAccountProperties.Add('Name', $Name) }
 
-        Close-PASSession -ErrorAction SilentlyContinue
+                Add-PASAccount @NewAccountProperties
+            }
+        }
     }
 }
 
@@ -130,38 +116,15 @@ function Set-Account {
 function Test-Account {
     param (
         [Ensure]$Ensure,
-
-        [parameter(Mandatory = $true)]
-        [ValidateNotNullOrEmpty()]
         [String]$UserName,
-
-        [parameter(Mandatory = $true)]
-        [ValidateNotNullOrEmpty()]
         [String]$Address,
-
-        [parameter(Mandatory = $true)]
-        [ValidateNotNullOrEmpty()]
         [String]$PlatformId,
-
-        [parameter(Mandatory = $true)]
-        [ValidateNotNullOrEmpty()]
         [String]$SafeName,
-
-        [parameter(Mandatory = $false)]
         [String]$Name,
 
-        [parameter(Mandatory = $true)]
-        [ValidateNotNullOrEmpty()]
         [String] $PvwaUrl,
-
-        [parameter(Mandatory = $true)]
-        [ValidateNotNullOrEmpty()]
         [String] $AuthenticationType,
-
-        [parameter(Mandatory = $true)]
-        [ValidateNotNullOrEmpty()]
         [pscredential] $Credential,
-
         [bool] $SkipCertificateCheck
     )
 
@@ -169,17 +132,36 @@ function Test-Account {
 
     Get-CyberArkSession -PvwaUrl $PvwaUrl -Credential $Credential -AuthenticationType $AuthenticationType -SkipCertificateCheck $SkipCertificateCheck
 
-    $ResourceExists = Get-PASAccount -safeName $SafeName -search "$UserName $Address $PlatformId" | Where-Object { $_.UserName -eq $UserName -and $_.Address -eq $Address -and $_.PlatformId -eq $PlatformId }
+    $ResourceExists = Get-PASAccount -search "$UserName $Address" | Where-Object { $_.UserName -eq $UserName -and $_.Address -eq $Address }
 
-    if ($Ensure -eq [Ensure]::Present -and $null -ne $ResourceExists) {
-        $DesiredState = $true
+    switch ($Ensure) {
+
+        'Absent' {
+            if ($null -eq $ResourceExists) {
+                $DesiredState = $true
+            }
+        }
+
+        'Exactly' {
+            if (-not [string]::IsNullOrEmpty($PlatformId)) {
+                $ResourceExists = $ResourceExists | Where-Object { $_.PlatformId -eq $PlatformId }
+            }
+
+            if (-not [string]::IsNullOrEmpty($Name)) {
+                $ResourceExists = $ResourceExists | Where-Object { $_.Name -eq $Name }
+            }
+
+            if ($ResourceExists) {
+                $DesiredState = $true
+            }
+        }
+
+        'Present' {
+            if ($null -ne $ResourceExists) {
+                $DesiredState = $true
+            }
+        }
     }
-
-    if ($Ensure -eq [Ensure]::Absent -and $null -eq $ResourceExists) {
-        $DesiredState = $true
-    }
-
-    Close-PASSession -ErrorAction SilentlyContinue
 
     $DesiredState
 }
@@ -195,10 +177,10 @@ class CYA_Account {
     [DscProperty(Key)]
     [string]$Address
 
-    [DscProperty(Key)]
+    [DscProperty(Mandatory)]
     [string]$PlatformId
 
-    [DscProperty(Key)]
+    [DscProperty(Mandatory)]
     [string]$SafeName
 
     [DscProperty()]
