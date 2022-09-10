@@ -44,7 +44,7 @@ function Get-Account {
         $CurrentState.platformAccountProperties = $ResourceExists.PlatformAccountProperties
         $CurrentState.Id = $ResourceExists.Id
     } else {
-        $CurrentState = [Ensure]::Absent
+        $CurrentState.Ensure = [Ensure]::Absent
     }
 
     return $CurrentState
