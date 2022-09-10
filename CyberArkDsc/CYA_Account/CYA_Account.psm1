@@ -6,8 +6,6 @@
 
 function Get-Account {
     param (
-        [Ensure]$Ensure,
-
         [String]$UserName,
         [String]$Address,
         [String]$PlatformId,
@@ -20,25 +18,37 @@ function Get-Account {
         [bool] $SkipCertificateCheck
     )
 
+    $CurrentState = [CYA_Account]::new()
+
     Get-CyberArkSession -PvwaUrl $PvwaUrl -Credential $Credential -AuthenticationType $AuthenticationType -SkipCertificateCheck $SkipCertificateCheck
 
-    $ResourceExists = Get-PASAccount -safeName $SafeName -search "$UserName $Address $PlatformId" | Where-Object { $_.UserName -eq $UserName -and $_.Address -eq $Address -and $_.PlatformId -eq $PlatformId }
+    # $Properties = $PSBoundParameters
+    # $Properties.Remove("PvwaUrl")
+    # $Properties.Remove("AuthenticationType")
+    # $Properties.Remove("Credential")
+    # $Properties.Remove("SkipCertificateCheck")
+
+    $ResourceExists = Get-PASAccount -search "$UserName $Address" | Where-Object { $_.UserName -eq $UserName -and $_.Address -eq $Address }
 
     if ($ResourceExists) {
-        $EnsureReturn = [Ensure]::Present
+        if ($ResourceExists | Where-Object { $_.UserName -eq $UserName -and $_.Address -eq $Address -and $_.PlatformId -eq $PlatformId -and $_.Safe -eq $SafeName -and $_.Name -eq $Name }) {
+            $CurrentState.Ensure = [Ensure]::Exactly
+        }
+        else {
+            $CurrentState.Ensure = [Ensure]::Present
+        }
+        $CurrentState.UserName = $ResourceExists.UserName
+        $CurrentState.Address = $ResourceExists.Address
+        $CurrentState.PlatformId = $ResourceExists.PlatformId
+        $CurrentState.SafeName = $ResourceExists.SafeName
+        $CurrentState.Name = $ResourceExists.Name
+        $CurrentState.platformAccountProperties = $ResourceExists.PlatformAccountProperties
+        $CurrentState.Id = $ResourceExists.Id
+    } else {
+        $CurrentState = [Ensure]::Absent
     }
 
-    @{
-        Ensure                    = $EnsureReturn
-        UserName                  = $AccountExists.UserName
-        Address                   = $AccountExists.Address
-        PlatformId                = $AccountExists.PlatformId
-        SafeName                  = $AccountExists.SafeName
-        Name                      = $AccountExists.Name
-        PlatformAccountProperties = $AccountExists.PlatformAccountProperties
-        Id                        = $AccountExists.Id
-    }
-
+    return $CurrentState
 }
 
 function Set-Account {
@@ -132,38 +142,37 @@ function Test-Account {
 
     Get-CyberArkSession -PvwaUrl $PvwaUrl -Credential $Credential -AuthenticationType $AuthenticationType -SkipCertificateCheck $SkipCertificateCheck
 
-    $ResourceExists = Get-PASAccount -search "$UserName $Address" | Where-Object { $_.UserName -eq $UserName -and $_.Address -eq $Address }
+    $Properties = $PSBoundParameters
+    $Properties.Remove("Ensure")
+    $Properties.Remove("PvwaUrl")
+    $Properties.Remove("AuthenticationType")
+    $Properties.Remove("Credential")
+    $Properties.Remove("SkipCertificateCheck")
+
+    $CurrentState = Get-Account @Properties
 
     switch ($Ensure) {
 
         'Absent' {
-            if ($null -eq $ResourceExists) {
+            if ($CurrentState.Ensure -eq [Ensure]::Absent) {
                 $DesiredState = $true
             }
         }
 
         'Exactly' {
-            if (-not [string]::IsNullOrEmpty($PlatformId)) {
-                $ResourceExists = $ResourceExists | Where-Object { $_.PlatformId -eq $PlatformId }
-            }
-
-            if (-not [string]::IsNullOrEmpty($Name)) {
-                $ResourceExists = $ResourceExists | Where-Object { $_.Name -eq $Name }
-            }
-
-            if ($ResourceExists) {
+            if ($CurrentState.Ensure -eq [Ensure]::Exactly) {
                 $DesiredState = $true
             }
         }
 
         'Present' {
-            if ($null -ne $ResourceExists) {
+            if ($CurrentState.Ensure -eq [Ensure]::Present) {
                 $DesiredState = $true
             }
         }
     }
 
-    $DesiredState
+    return $DesiredState
 }
 
 [DscResource()]
@@ -205,7 +214,7 @@ class CYA_Account {
     [bool]$SkipCertificateCheck
 
     [CYA_Account] Get() {
-        $Get = Get-Account -Ensure $this.Ensure -UserName $this.UserName -Address $this.Address -PlatformId $this.PlatformId -SafeName $this.SafeName -PvwaUrl $this.PvwaUrl -AuthenticationType $this.AuthenticationType -Credential $this.Credential -SkipCertificateCheck:$this.SkipCertificateCheck
+        $Get = Get-Account -UserName $this.UserName -Address $this.Address -PlatformId $this.PlatformId -SafeName $this.SafeName -PvwaUrl $this.PvwaUrl -AuthenticationType $this.AuthenticationType -Credential $this.Credential -SkipCertificateCheck:$this.SkipCertificateCheck
         return $Get
     }
 
