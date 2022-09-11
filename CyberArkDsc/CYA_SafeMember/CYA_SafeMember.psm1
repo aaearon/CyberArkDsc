@@ -5,64 +5,52 @@
 
 function Get-SafeMember {
     param (
-        [Ensure]$Ensure,
-
-        [parameter(Mandatory = $true)]
-        [ValidateNotNullOrEmpty()]
         [String]$SafeName,
-
         [String]$MemberName,
 
-        [parameter(Mandatory = $true)]
-        [String] $PvwaUrl,
-
-        [parameter(Mandatory = $true)]
-        [String] $AuthenticationType,
-
-        [parameter(Mandatory = $true)]
-        [pscredential] $Credential,
-
+        [String]$PvwaUrl,
+        [String]$AuthenticationType,
+        [pscredential]$Credential,
         [bool] $SkipCertificateCheck
     )
 
     Get-CyberArkSession -PvwaUrl $PvwaUrl -Credential $Credential -AuthenticationType $AuthenticationType -SkipCertificateCheck $SkipCertificateCheck
 
+    $CurrentState = [CYA_SafeMember]::new()
+
     try {
         $ResourceExists = Get-PASSafeMember -SafeName $SafeName -MemberName $MemberName -ErrorAction SilentlyContinue
-        $EnsureReturn = [Ensure]::Present
-    } catch {
-        $EnsureReturn = [Ensure]::Absent
-    } finally {
 
-        @{
-            Ensure                                 = $EnsureReturn
-            SafeName                               = $ResourceExists.SafeName
-            MemberName                             = $ResourceExists.UserName
-            UseAccounts                            = $ResourceExists.Permissions.useAccounts
-            RetrieveAccounts                       = $ResourceExists.Permissions.retrieveAccounts
-            ListAccounts                           = $ResourceExists.Permissions.listAccounts
-            AddAccounts                            = $ResourceExists.Permissions.addAccounts
-            UpdateAccountContent                   = $ResourceExists.Permissions.updateAccountContent
-            UpdateAccountProperties                = $ResourceExists.Permissions.updateAccountProperties
-            InitiateCPMAccountManagementOperations = $ResourceExists.Permissions.initiateCPMAccountManagementOperations
-            SpecifyNextAccountContent              = $ResourceExists.Permissions.specifyNextAccountContent
-            RenameAccounts                         = $ResourceExists.Permissions.renameAccounts
-            DeleteAccounts                         = $ResourceExists.Permissions.deleteAccounts
-            UnlockAccounts                         = $ResourceExists.Permissions.unlockAccounts
-            ManageSafe                             = $ResourceExists.Permissions.manageSafe
-            ManageSafeMembers                      = $ResourceExists.Permissions.manageSafeMembers
-            BackupSafe                             = $ResourceExists.Permissions.backupSafe
-            ViewAuditLog                           = $ResourceExists.Permissions.viewAuditLog
-            ViewSafeMembers                        = $ResourceExists.Permissions.viewSafeMembers
-            AccessWithoutConfirmation              = $ResourceExists.Permissions.accessWithoutConfirmation
-            CreateFolders                          = $ResourceExists.Permissions.createFolders
-            DeleteFolders                          = $ResourceExists.Permissions.deleteFolders
-            MoveAccountsandFolders                 = $ResourceExists.Permissions.moveAccountsandFolders
-            RequestsAuthorizationLevel1            = $ResourceExists.Permissions.requestsAuthorizationLevel1
-            RequestsAuthorizationLevel2            = $ResourceExists.Permissions.requestsAuthorizationLevel2
-        }
+        $CurrentState.Ensure = [Ensure]::Present
+        $CurrentState.SafeName = $ResourceExists.SafeName
+        $CurrentState.MemberName = $ResourceExists.UserName
+        $CurrentState.UseAccounts = $ResourceExists.Permissions.useAccounts
+        $CurrentState.RetrieveAccounts = $ResourceExists.Permissions.retrieveAccounts
+        $CurrentState.ListAccounts = $ResourceExists.Permissions.listAccounts
+        $CurrentState.AddAccounts = $ResourceExists.Permissions.addAccounts
+        $CurrentState.UpdateAccountContent = $ResourceExists.Permissions.updateAccountContent
+        $CurrentState.UpdateAccountProperties = $ResourceExists.Permissions.updateAccountProperties
+        $CurrentState.InitiateCPMAccountManagementOperations = $ResourceExists.Permissions.initiateCPMAccountManagementOperations
+        $CurrentState.SpecifyNextAccountContent = $ResourceExists.Permissions.specifyNextAccountContent
+        $CurrentState.RenameAccounts = $ResourceExists.Permissions.renameAccounts
+        $CurrentState.DeleteAccounts = $ResourceExists.Permissions.deleteAccounts
+        $CurrentState.UnlockAccounts = $ResourceExists.Permissions.unlockAccounts
+        $CurrentState.ManageSafe = $ResourceExists.Permissions.manageSafe
+        $CurrentState.ManageSafeMembers = $ResourceExists.Permissions.manageSafeMembers
+        $CurrentState.BackupSafe = $ResourceExists.Permissions.backupSafe
+        $CurrentState.ViewAuditLog = $ResourceExists.Permissions.viewAuditLog
+        $CurrentState.ViewSafeMembers = $ResourceExists.Permissions.viewSafeMembers
+        $CurrentState.AccessWithoutConfirmation = $ResourceExists.Permissions.accessWithoutConfirmation
+        $CurrentState.CreateFolders = $ResourceExists.Permissions.createFolders
+        $CurrentState.DeleteFolders = $ResourceExists.Permissions.deleteFolders
+        $CurrentState.MoveAccountsandFolders = $ResourceExists.Permissions.moveAccountsandFolders
+        $CurrentState.RequestsAuthorizationLevel1 = $ResourceExists.Permissions.requestsAuthorizationLevel1
+        $CurrentState.RequestsAuthorizationLevel2 = $ResourceExists.Permissions.requestsAuthorizationLevel2
+    } catch {
+        $CurrentState.Ensure = [Ensure]::Absent
     }
 
+    return $CurrentState
 }
 
 function Set-SafeMember {
@@ -372,7 +360,7 @@ class CYA_SafeMember {
     [bool]$SkipCertificateCheck
 
     [CYA_SafeMember] Get() {
-        $Get = Get-SafeMember -Ensure $this.Ensure -SafeName $this.SafeName -MemberName $this.MemberName -PvwaUrl $this.PvwaUrl -AuthenticationType $this.AuthenticationType -Credential $this.Credential -SkipCertificateCheck $this.SkipCertificateCheck
+        $Get = Get-SafeMember -SafeName $this.SafeName -MemberName $this.MemberName -PvwaUrl $this.PvwaUrl -AuthenticationType $this.AuthenticationType -Credential $this.Credential -SkipCertificateCheck $this.SkipCertificateCheck
         return $Get
     }
 
