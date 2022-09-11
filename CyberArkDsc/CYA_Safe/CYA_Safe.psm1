@@ -5,53 +5,37 @@
 
 function Get-Safe {
     param (
-        [Ensure]$Ensure,
-
-        [parameter(Mandatory = $true)]
-        [ValidateNotNullOrEmpty()]
         [String]$SafeName,
-
         [String]$ManagingCPM,
-
         [String]$NumberOfDaysRetention,
-
         [String]$NumberOfVersionsRetention,
-
         [String]$Description,
 
-        [parameter(Mandatory = $true)]
         [String] $PvwaUrl,
-
-        [parameter(Mandatory = $true)]
         [String] $AuthenticationType,
-
-        [parameter(Mandatory = $true)]
         [pscredential] $Credential,
-
         [bool] $SkipCertificateCheck
     )
 
-    $EnsureReturn = [Ensure]::Absent
-
     Get-CyberArkSession -PvwaUrl $PvwaUrl -Credential $Credential -AuthenticationType $AuthenticationType -SkipCertificateCheck $SkipCertificateCheck
 
-    $ResourceExists = Get-PASSafe -SafeName $SafeName -ErrorAction SilentlyContinue
+    $ResourceExists = Get-PASSafe -SafeName $SafeName -ErrorAction SilentlyContinue | Select-Object -Property *
+
+    $CurrentState = [CYA_Safe]::new()
 
     if ($ResourceExists) {
-        $EnsureReturn = [Ensure]::Present
+        $CurrentState.Ensure                    = [Ensure]::Present
+        $CurrentState.SafeName                  = $ResourceExists.SafeName
+        $CurrentState.ManagingCPM               = $ResourceExists.ManagingCPM
+        $CurrentState.NumberOfDaysRetention     = $ResourceExists.NumberOfDaysRetention
+        $CurrentState.NumberOfVersionsRetention = $ResourceExists.NumberOfVersionsRetention
+        $CurrentState.Description               = $ResourceExists.Description
+    } else {
+        $CurrentState.Ensure = [Ensure]::Absent
     }
 
-    Close-PASSession -ErrorAction SilentlyContinue
-
-    @{
-        Ensure                    = $EnsureReturn
-        SafeName                  = $ResourceExists.SafeName
-        ManagingCPM               = $ResourceExists.ManagingCPM
-        NumberOfDaysRetention     = $ResourceExists.NumberOfDaysRetention
-        NumberOfVersionsRetention = $ResourceExists.NumberOfVersionsRetention
-        Description               = $ResourceExists.Description
-    }
-    }
+    return $CurrentState
+}
 
 function Set-Safe {
     param (
@@ -84,14 +68,14 @@ function Set-Safe {
     Get-CyberArkSession -PvwaUrl $PvwaUrl -Credential $Credential -AuthenticationType $AuthenticationType -SkipCertificateCheck $SkipCertificateCheck
 
     $TestSafeParameters = @{
-        Ensure = $Ensure
-        SafeName = $SafeName
-        ManagingCPM = $ManagingCPM
-        Description = $Description
+        Ensure               = $Ensure
+        SafeName             = $SafeName
+        ManagingCPM          = $ManagingCPM
+        Description          = $Description
 
-        PvwaUrl = $PvwaUrl
-        AuthenticationType = $AuthenticationType
-        Credential = $Credential
+        PvwaUrl              = $PvwaUrl
+        AuthenticationType   = $AuthenticationType
+        Credential           = $Credential
         SkipCertificateCheck = $SkipCertificateCheck
     }
 
@@ -221,7 +205,7 @@ class CYA_Safe {
     [bool]$SkipCertificateCheck
 
     [CYA_Safe] Get() {
-        $Get = Get-Safe -Ensure $this.Ensure -SafeName $this.SafeName -ManagingCPM $this.ManagingCPM -NumberOfDaysRetention $this.NumberOfDaysRetention -NumberOfVersionsRetention $this.NumberOfVersionsRetention -Description $this.Description -PvwaUrl $this.PvwaUrl -AuthenticationType $this.AuthenticationType -Credential $this.Credential -SkipCertificateCheck $this.SkipCertificateCheck
+        $Get = Get-Safe -SafeName $this.SafeName -ManagingCPM $this.ManagingCPM -NumberOfDaysRetention $this.NumberOfDaysRetention -NumberOfVersionsRetention $this.NumberOfVersionsRetention -Description $this.Description -PvwaUrl $this.PvwaUrl -AuthenticationType $this.AuthenticationType -Credential $this.Credential -SkipCertificateCheck $this.SkipCertificateCheck
         return $Get
     }
 
