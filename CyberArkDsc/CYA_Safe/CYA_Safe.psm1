@@ -111,65 +111,41 @@ function Set-Safe {
     }
 }
 
-
 function Test-Safe {
     param (
         [Ensure]$Ensure,
-
-        [parameter(Mandatory = $true)]
-        [ValidateNotNullOrEmpty()]
         [String]$SafeName,
-
         [String]$ManagingCPM,
-
         [String]$NumberOfDaysRetention,
-
         [String]$NumberOfVersionsRetention,
-
         [String]$Description,
 
-        [parameter(Mandatory = $true)]
-        [String] $PvwaUrl,
-
-        [parameter(Mandatory = $true)]
-        [String] $AuthenticationType,
-
-        [parameter(Mandatory = $true)]
-        [pscredential] $Credential,
-
-        [bool] $SkipCertificateCheck
+        [String]$PvwaUrl,
+        [String]$AuthenticationType,
+        [pscredential]$Credential,
+        [bool]$SkipCertificateCheck
     )
 
-    $DesiredState = $false
+    $isDesiredState = $false
 
     Get-CyberArkSession -PvwaUrl $PvwaUrl -Credential $Credential -AuthenticationType $AuthenticationType -SkipCertificateCheck $SkipCertificateCheck
 
-    try {
+    $CurrentState = Get-Safe -SafeName $SafeName -PvwaUrl $PvwaUrl -AuthenticationType $AuthenticationType -Credential $Credential -SkipCertificateCheck $SkipCertificateCheck
 
-        $ResourceExists = Get-PASSafe -SafeName $SafeName -ErrorAction SilentlyContinue | Where-Object { $_.ManagingCPM -eq $ManagingCPM -and $_.Description -eq $Description }
-
-        if ($NumberOfDaysRetention) {
-            $ResourceExists = $ResourceExists | Where-Object { $_.NumberOfDaysRetention -eq $NumberOfDaysRetention }
+    switch ($Ensure) {
+        'Absent' {
+            if ($CurrentState.Ensure -eq [Ensure]::Absent) {
+                $isDesiredState = $true
+            }
         }
-        if ($NumberOfVersionsRetention) {
-            $ResourceExists = $ResourceExists | Where-Object { $_.NumberOfVersionsRetention -eq $NumberOfVersionsRetention }
+        'Present' {
+            if ($CurrentState.Ensure -ne [Ensure]::Absent) {
+                $isDesiredState = $true
+            }
         }
-
-    } catch {
-        $ResourceExists = $null
     }
 
-    if ($Ensure -eq [Ensure]::Present -and $null -ne $ResourceExists) {
-        $DesiredState = $true
-    }
-
-    if ($Ensure -eq [Ensure]::Absent -and $null -eq $ResourceExists) {
-        $DesiredState = $true
-    }
-
-    Close-PASSession -ErrorAction SilentlyContinue
-
-    $DesiredState
+    return $isDesiredState
 }
 
 [DscResource()]
