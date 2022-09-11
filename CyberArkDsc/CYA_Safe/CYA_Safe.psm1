@@ -11,10 +11,10 @@ function Get-Safe {
         [String]$NumberOfVersionsRetention,
         [String]$Description,
 
-        [String] $PvwaUrl,
-        [String] $AuthenticationType,
-        [pscredential] $Credential,
-        [bool] $SkipCertificateCheck
+        [String]$PvwaUrl,
+        [String]$AuthenticationType,
+        [pscredential]$Credential,
+        [bool]$SkipCertificateCheck
     )
 
     Get-CyberArkSession -PvwaUrl $PvwaUrl -Credential $Credential -AuthenticationType $AuthenticationType -SkipCertificateCheck $SkipCertificateCheck
@@ -24,12 +24,12 @@ function Get-Safe {
     try {
         $ResourceExists = Get-PASSafe -SafeName $SafeName -ErrorAction SilentlyContinue | Select-Object -Property *
 
-        $CurrentState.Ensure                    = [Ensure]::Present
-        $CurrentState.SafeName                  = $ResourceExists.SafeName
-        $CurrentState.ManagingCPM               = $ResourceExists.ManagingCPM
-        $CurrentState.NumberOfDaysRetention     = $ResourceExists.NumberOfDaysRetention
+        $CurrentState.Ensure = [Ensure]::Present
+        $CurrentState.SafeName = $ResourceExists.SafeName
+        $CurrentState.ManagingCPM = $ResourceExists.ManagingCPM
+        $CurrentState.NumberOfDaysRetention = $ResourceExists.NumberOfDaysRetention
         $CurrentState.NumberOfVersionsRetention = $ResourceExists.NumberOfVersionsRetention
-        $CurrentState.Description               = $ResourceExists.Description
+        $CurrentState.Description = $ResourceExists.Description
     } catch {
         $CurrentState.Ensure = [Ensure]::Absent
     }
@@ -47,10 +47,10 @@ function Set-Safe {
         [String]$NumberOfVersionsRetention,
         [String]$Description,
 
-        [String] $PvwaUrl,
-        [String] $AuthenticationType,
-        [pscredential] $Credential,
-        [bool] $SkipCertificateCheck
+        [String]$PvwaUrl,
+        [String]$AuthenticationType,
+        [pscredential]$Credential,
+        [bool]$SkipCertificateCheck
     )
 
     $Properties = Get-AccountPropertiesFromPSBoundParameters $PSBoundParameters
@@ -151,37 +151,11 @@ class CYA_Safe {
     }
 
     [void] Set() {
-        $SetSafeParameters = @{
-            Ensure               = $this.Ensure
-            SafeName             = $this.SafeName
-            ManagingCPM          = $this.ManagingCPM
-            Description          = $this.Description
-            PvwaUrl              = $this.PvwaUrl
-            AuthenticationType   = $this.AuthenticationType
-            Credential           = $this.Credential
-            SkipCertificateCheck = $this.SkipCertificateCheck
-        }
-        if ($this.NumberOfDaysRetention) { $SetSafeParameters.Add('NumberOfDaysRetention', $this.NumberOfDaysRetention) }
-        if ($this.NumberOfVersionsRetention) { $SetSafeParameters.Add('NumberOfVersionsRetention', $this.NumberOfVersionsRetention) }
-
-        Set-Safe @SetSafeParameters
+        Set-Safe -Ensure $this.Ensure -SafeName $this.SafeName -ManagingCPM $this.ManagingCPM -NumberOfDaysRetention $this.NumberOfDaysRetention -NumberOfVersionsRetention $this.NumberOfVersionsRetention -Description $this.Description -PvwaUrl $this.PvwaUrl -AuthenticationType $this.AuthenticationType -Credential $this.Credential -SkipCertificateCheck $this.SkipCertificateCheck
     }
 
     [bool] Test() {
-        $TestSafeParameters = @{
-            Ensure               = $this.Ensure
-            SafeName             = $this.SafeName
-            ManagingCPM          = $this.ManagingCPM
-            Description          = $this.Description
-            PvwaUrl              = $this.PvwaUrl
-            AuthenticationType   = $this.AuthenticationType
-            Credential           = $this.Credential
-            SkipCertificateCheck = $this.SkipCertificateCheck
-        }
-        if ($this.NumberOfDaysRetention) { $TestSafeParameters.Add('NumberOfDaysRetention', $this.NumberOfDaysRetention) }
-        if ($this.NumberOfVersionsRetention) { $TestSafeParameters.Add('NumberOfVersionsRetention', $this.NumberOfVersionsRetention) }
-
-        $Test = Test-Safe @TestSafeParameters
+        $Test = Test-Safe -Ensure $this.Ensure -SafeName $this.SafeName -ManagingCPM $this.ManagingCPM -NumberOfDaysRetention $this.NumberOfDaysRetention -NumberOfVersionsRetention $this.NumberOfVersionsRetention -Description $this.Description -PvwaUrl $this.PvwaUrl -AuthenticationType $this.AuthenticationType -Credential $this.Credential -SkipCertificateCheck $this.SkipCertificateCheck
         return $Test
     }
 }
