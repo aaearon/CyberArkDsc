@@ -50,6 +50,40 @@ Configuration MyConfig {
             SkipCertificateCheck  = $true
             Credential            = $VaultCredential
         }
+
+        CYA_SafeMember 'CyberArk Administrators' {
+            Ensure                                 = 'Present'
+            SafeName                               = 'Switches'
+            MemberName                             = 'CyberArk Administrators'
+
+            UseAccounts                            = $true
+            RetrieveAccounts                       = $true
+            ListAccounts                           = $true
+            AddAccounts                            = $true
+            UpdateAccountContent                   = $true
+            UpdateAccountProperties                = $true
+            InitiateCPMAccountManagementOperations = $true
+            SpecifyNextAccountContent              = $true
+            RenameAccounts                         = $true
+            DeleteAccounts                         = $true
+            UnlockAccounts                         = $true
+            ManageSafe                             = $true
+            ManageSafeMembers                      = $true
+            BackupSafe                             = $true
+            ViewAuditLog                           = $true
+            ViewSafeMembers                        = $true
+            AccessWithoutConfirmation              = $true
+            CreateFolders                          = $true
+            DeleteFolders                          = $true
+            MoveAccountsAndFolders                 = $true
+            RequestsAuthorizationLevel1            = $true
+            RequestsAuthorizationLevel2            = $true
+
+            PvwaUrl                                = 'https://192.168.137.101'
+            AuthenticationType                     = 'LDAP'
+            SkipCertificateCheck                   = $true
+            Credential                             = $VaultCredential
+        }
     }
 }
 

@@ -1,216 +1,160 @@
 ﻿enum Ensure {
     Absent
+    Exactly
     Present
 }
 
 function Get-Account {
     param (
-        [ValidateSet('Present', 'Absent')]
-        [string]$Ensure = 'Present',
-
-        [parameter(Mandatory = $true)]
-        [ValidateNotNullOrEmpty()]
         [String]$UserName,
-
-        [parameter(Mandatory = $true)]
-        [ValidateNotNullOrEmpty()]
         [String]$Address,
-
-        [parameter(Mandatory = $true)]
-        [ValidateNotNullOrEmpty()]
         [String]$PlatformId,
-
-        [parameter(Mandatory = $true)]
-        [ValidateNotNullOrEmpty()]
         [String]$SafeName,
-
-        [parameter(Mandatory = $false)]
         [String]$Name,
 
-        [parameter(Mandatory = $true)]
         [String] $PvwaUrl,
-
-        [parameter(Mandatory = $true)]
         [String] $AuthenticationType,
-
-        [parameter(Mandatory = $true)]
         [pscredential] $Credential,
-
         [bool] $SkipCertificateCheck
     )
 
-    $EnsureReturn = 'Absent'
+    $Properties = Get-AccountPropertiesFromPSBoundParameters $PSBoundParameters
 
-    $SessionParameters = @{
-        BaseUri           = $PvwaUrl
-        Credential        = $Credential
-        Type              = $AuthenticationType
-        concurrentSession = $true
-    }
-    if ($SkipCertificateCheck) { $SessionParameters.Add('SkipCertificateCheck', $true) }
+    Get-CyberArkSession -PvwaUrl $PvwaUrl -Credential $Credential -AuthenticationType $AuthenticationType -SkipCertificateCheck $SkipCertificateCheck
 
-    New-PASSession @SessionParameters
+    $ResourceExists = Get-PASAccount -search "$UserName $Address" | Where-Object { $_.UserName -eq $UserName -and $_.Address -eq $Address }
 
-    $ResourceExists = Get-PASAccount -safeName $SafeName -search "$UserName $Address $PlatformId" | Where-Object { $_.UserName -eq $UserName -and $_.Address -eq $Address -and $_.PlatformId -eq $PlatformId }
+    $CurrentState = [CYA_Account]::new()
 
     if ($ResourceExists) {
-        $EnsureReturn = 'Present'
+        foreach ($Property in $Properties.GetEnumerator()) {
+            if ($ResourceExists.$($Property.Name) -ne $Property.Value) {
+                $CurrentState.Ensure = [Ensure]::Present
+                break
+            } else {
+                $CurrentState.Ensure = [Ensure]::Exactly
+            }
+        }
+        $CurrentState.UserName = $ResourceExists.UserName
+        $CurrentState.Address = $ResourceExists.Address
+        $CurrentState.PlatformId = $ResourceExists.PlatformId
+        $CurrentState.SafeName = $ResourceExists.SafeName
+        $CurrentState.Name = $ResourceExists.Name
+        $CurrentState.platformAccountProperties = $ResourceExists.PlatformAccountProperties
+        $CurrentState.Id = $ResourceExists.Id
+    } else {
+        $CurrentState.Ensure = [Ensure]::Absent
     }
 
-    Close-PASSession -ErrorAction SilentlyContinue
-
-    @{
-        Ensure                    = $EnsureReturn
-        UserName                  = $AccountExists.UserName
-        Address                   = $AccountExists.Address
-        PlatformId                = $AccountExists.PlatformId
-        SafeName                  = $AccountExists.SafeName
-        Name                      = $AccountExists.Name
-        PlatformAccountProperties = $AccountExists.PlatformAccountProperties
-        Id                        = $AccountExists.Id
-    }
-
+    return $CurrentState
 }
 
 function Set-Account {
     param (
-        [ValidateSet('Present', 'Absent')]
-        [string]$Ensure = 'Present',
+        [Ensure]$Ensure,
 
-        [parameter(Mandatory = $true)]
-        [ValidateNotNullOrEmpty()]
         [String]$UserName,
-
-        [parameter(Mandatory = $true)]
-        [ValidateNotNullOrEmpty()]
         [String]$Address,
-
-        [parameter(Mandatory = $true)]
-        [ValidateNotNullOrEmpty()]
         [String]$PlatformId,
-
-        [parameter(Mandatory = $true)]
-        [ValidateNotNullOrEmpty()]
         [String]$SafeName,
-
-        [parameter(Mandatory = $false)]
         [String]$Name,
 
-        [parameter(Mandatory = $true)]
-        [ValidateNotNullOrEmpty()]
         [String] $PvwaUrl,
-
-        [parameter(Mandatory = $true)]
-        [ValidateNotNullOrEmpty()]
         [String] $AuthenticationType,
-
-        [parameter(Mandatory = $true)]
-        [ValidateNotNullOrEmpty()]
         [pscredential] $Credential,
-
         [bool] $SkipCertificateCheck
     )
 
-    $SessionParameters = @{
-        BaseUri           = $PvwaUrl
-        Credential        = $Credential
-        Type              = $AuthenticationType
-        concurrentSession = $true
-    }
-    if ($SkipCertificateCheck) { $SessionParameters.Add('SkipCertificateCheck', $true) }
+    $Properties = Get-AccountPropertiesFromPSBoundParameters $PSBoundParameters
 
-    New-PASSession @SessionParameters
+    Get-CyberArkSession -PvwaUrl $PvwaUrl -Credential $Credential -AuthenticationType $AuthenticationType -SkipCertificateCheck $SkipCertificateCheck
 
     $DesiredState = Test-Account -Ensure $Ensure -UserName $UserName -Address $Address -PlatformId $PlatformId -SafeName $SafeName -PvwaUrl $PvwaUrl -AuthenticationType $AuthenticationType -Credential $Credential -SkipCertificateCheck:$SkipCertificateCheck
 
-    if ($DesiredState -eq $false) {
+    if (-not $DesiredState) {
 
-        if ($Ensure -eq 'Present') {
+        switch ($Ensure) {
 
-            $NewAccountProperties = @{
-                UserName   = $UserName
-                Address    = $Address
-                PlatformId = $PlatformId
-                SafeName   = $SafeName
+            'Absent' {
+                Get-PASAccount -safeName $SafeName -search "$UserName $Address" | Where-Object { $_.UserName -eq $UserName -and $_.Address -eq $Address } | Remove-PASAccount
             }
-            if ($Name) { $NewAccountProperties.Add('Name', $Name) }
 
-            Add-PASAccount @NewAccountProperties
+            'Exactly' {
+                $Account = Get-Account -UserName $UserName -Address $Address -PvwaUrl $PvwaUrl -AuthenticationType $AuthenticationType -Credential $Credential -SkipCertificateCheck:$SkipCertificateCheck
+
+                if ([string]::isNullOrEmpty($Account.Id)) {
+                    Add-PASAccount @Properties
+                } else {
+                    $Actions = @()
+
+                    foreach ($Property in $Properties.GetEnumerator()) {
+                        if ($ResourceExists.$($Property.Name) -ne $Property.Value) {
+                            $Actions += @{
+                                op    = 'replace'
+                                path  = "/$($Property.Name)"
+                                value = $Property.Value
+                            }
+                        }
+                    }
+                    if ($Actions.Count -gt 0) {
+                        Set-PASAccount -ID $Account.ID -operations $Actions
+                    }
+                }
+            }
+
+            'Present' {
+                Add-PASAccount @Properties
+            }
         }
-
-        if ($Ensure -eq 'Absent') {
-            Get-PASAccount -safeName $SafeName -search "$UserName $Address $PlatformId" | Where-Object { $_.UserName -eq $UserName -and $_.Address -eq $Address -and $_.PlatformId -eq $PlatformId } | Remove-PASAccount
-        }
-
-        Close-PASSession -ErrorAction SilentlyContinue
     }
 }
 
 
 function Test-Account {
     param (
-        [ValidateSet('Present', 'Absent')]
-        [ensure]$Ensure = 'Present',
-
-        [parameter(Mandatory = $true)]
-        [ValidateNotNullOrEmpty()]
+        [Ensure]$Ensure,
         [String]$UserName,
-
-        [parameter(Mandatory = $true)]
-        [ValidateNotNullOrEmpty()]
         [String]$Address,
-
-        [parameter(Mandatory = $true)]
-        [ValidateNotNullOrEmpty()]
         [String]$PlatformId,
-
-        [parameter(Mandatory = $true)]
-        [ValidateNotNullOrEmpty()]
         [String]$SafeName,
-
-        [parameter(Mandatory = $false)]
         [String]$Name,
 
-        [parameter(Mandatory = $true)]
-        [ValidateNotNullOrEmpty()]
         [String] $PvwaUrl,
-
-        [parameter(Mandatory = $true)]
-        [ValidateNotNullOrEmpty()]
         [String] $AuthenticationType,
-
-        [parameter(Mandatory = $true)]
-        [ValidateNotNullOrEmpty()]
         [pscredential] $Credential,
-
         [bool] $SkipCertificateCheck
     )
 
     $DesiredState = $false
 
-    $SessionParameters = @{
-        BaseUri           = $PvwaUrl
-        Credential        = $Credential
-        Type              = $AuthenticationType
-        concurrentSession = $true
+    $Properties = Get-AccountPropertiesFromPSBoundParameters $PSBoundParameters
+
+    Get-CyberArkSession -PvwaUrl $PvwaUrl -Credential $Credential -AuthenticationType $AuthenticationType -SkipCertificateCheck $SkipCertificateCheck
+
+    $CurrentState = Get-Account @Properties
+
+    switch ($Ensure) {
+
+        'Absent' {
+            if ($CurrentState.Ensure -eq [Ensure]::Absent) {
+                $DesiredState = $true
+            }
+        }
+
+        'Exactly' {
+            if ($CurrentState.Ensure -eq [Ensure]::Exactly) {
+                $DesiredState = $true
+            }
+        }
+
+        'Present' {
+            if ($CurrentState.Ensure -ne [Ensure]::Absent) {
+                $DesiredState = $true
+            }
+        }
     }
-    if ($SkipCertificateCheck) { $SessionParameters.Add('SkipCertificateCheck', $true) }
 
-    New-PASSession @SessionParameters
-
-    $ResourceExists = Get-PASAccount -safeName $SafeName -search "$UserName $Address $PlatformId" | Where-Object { $_.UserName -eq $UserName -and $_.Address -eq $Address -and $_.PlatformId -eq $PlatformId }
-
-    if ($Ensure -eq 'Present' -and $null -ne $ResourceExists) {
-        $DesiredState = $true
-    }
-
-    if ($Ensure -eq 'Absent' -and $null -eq $ResourceExists) {
-        $DesiredState = $true
-    }
-
-    Close-PASSession -ErrorAction SilentlyContinue
-
-    $DesiredState
+    return $DesiredState
 }
 
 [DscResource()]
@@ -224,10 +168,10 @@ class CYA_Account {
     [DscProperty(Key)]
     [string]$Address
 
-    [DscProperty(Key)]
+    [DscProperty(Mandatory)]
     [string]$PlatformId
 
-    [DscProperty(Key)]
+    [DscProperty(Mandatory)]
     [string]$SafeName
 
     [DscProperty()]
@@ -252,7 +196,7 @@ class CYA_Account {
     [bool]$SkipCertificateCheck
 
     [CYA_Account] Get() {
-        $Get = Get-Account -Ensure $this.Ensure -UserName $this.UserName -Address $this.Address -PlatformId $this.PlatformId -SafeName $this.SafeName -PvwaUrl $this.PvwaUrl -AuthenticationType $this.AuthenticationType -Credential $this.Credential -SkipCertificateCheck:$this.SkipCertificateCheck
+        $Get = Get-Account -UserName $this.UserName -Address $this.Address -PlatformId $this.PlatformId -SafeName $this.SafeName -PvwaUrl $this.PvwaUrl -AuthenticationType $this.AuthenticationType -Credential $this.Credential -SkipCertificateCheck:$this.SkipCertificateCheck
         return $Get
     }
 

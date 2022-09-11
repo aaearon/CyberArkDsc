@@ -12,7 +12,7 @@
 # RootModule = ''
 
 # Version number of this module.
-ModuleVersion = '0.0.1'
+ModuleVersion = '0.0.2'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()
@@ -67,8 +67,10 @@ Copyright = '(c) Tim Schindler. All rights reserved.'
 
 # Modules to import as nested modules of the module specified in RootModule/ModuleToProcess
 NestedModules = @(
+    '.\CyberArkDsc.Common\Common.psd1',
     '.\CYA_Account\CYA_Account.psd1',
-    '.\CYA_Safe\CYA_Safe.psd1'
+    '.\CYA_Safe\CYA_Safe.psd1',
+    '.\CYA_SafeMember\CYA_SafeMember.psd1'
 )
 
 # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
@@ -86,7 +88,8 @@ AliasesToExport = @()
 # DSC resources to export from this module
 DscResourcesToExport = @(
     'CYA_Account',
-    'CYA_Safe'
+    'CYA_Safe',
+    'CYA_SafeMember'
 )
 
 # List of all modules packaged with this module
