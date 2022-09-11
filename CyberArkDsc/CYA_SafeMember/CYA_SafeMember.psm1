@@ -58,124 +58,58 @@ function Set-SafeMember {
         [Ensure]$Ensure,
 
         [string]$SafeName,
-
         [string]$MemberName,
-
         [string]$SearchIn,
-
         [datetime]$MembershipExpirationDate,
-
         [boolean]$UseAccounts,
-
         [boolean]$RetrieveAccounts,
-
         [boolean]$ListAccounts,
-
         [boolean]$AddAccounts,
-
         [boolean]$UpdateAccountContent,
-
         [boolean]$UpdateAccountProperties,
-
         [boolean]$InitiateCPMAccountManagementOperations,
-
         [boolean]$SpecifyNextAccountContent,
-
         [boolean]$RenameAccounts,
-
         [boolean]$DeleteAccounts,
-
         [boolean]$UnlockAccounts,
-
         [boolean]$ManageSafe,
-
         [boolean]$ManageSafeMembers,
-
         [boolean]$BackupSafe,
-
         [boolean]$ViewAuditLog,
-
         [boolean]$ViewSafeMembers,
-
         [boolean]$requestsAuthorizationLevel1,
-
         [boolean]$requestsAuthorizationLevel2,
-
         [boolean]$AccessWithoutConfirmation,
-
         [boolean]$CreateFolders,
-
         [boolean]$DeleteFolders,
-
         [boolean]$MoveAccountsAndFolders,
 
-        [parameter(Mandatory = $true)]
         [String] $PvwaUrl,
-
-        [parameter(Mandatory = $true)]
         [String] $AuthenticationType,
-
-        [parameter(Mandatory = $true)]
         [pscredential] $Credential,
-
         [bool] $SkipCertificateCheck
     )
 
+    $Properties = Get-AccountPropertiesFromPSBoundParameters $PSBoundParameters
+
     Get-CyberArkSession -PvwaUrl $PvwaUrl -Credential $Credential -AuthenticationType $AuthenticationType -SkipCertificateCheck $SkipCertificateCheck
 
-    $TestSafeMemberParameters = @{
-        Ensure                                 = $Ensure
-
-        SafeName                               = $SafeName
-        MemberName                             = $MemberName
-        UseAccounts                            = $UseAccounts
-        RetrieveAccounts                       = $RetrieveAccounts
-        ListAccounts                           = $ListAccounts
-        AddAccounts                            = $AddAccounts
-        UpdateAccountContent                   = $UpdateAccountContent
-        UpdateAccountProperties                = $UpdateAccountProperties
-        InitiateCPMAccountManagementOperations = $InitiateCPMAccountManagementOperations
-        SpecifyNextAccountContent              = $SpecifyNextAccountContent
-        RenameAccounts                         = $RenameAccounts
-        DeleteAccounts                         = $DeleteAccounts
-        UnlockAccounts                         = $UnlockAccounts
-        ManageSafe                             = $ManageSafe
-        ManageSafeMembers                      = $ManageSafeMembers
-        BackupSafe                             = $BackupSafe
-        ViewAuditLog                           = $ViewAuditLog
-        ViewSafeMembers                        = $ViewSafeMembers
-        requestsAuthorizationLevel1            = $requestsAuthorizationLevel1
-        requestsAuthorizationLevel2            = $requestsAuthorizationLevel2
-        AccessWithoutConfirmation              = $AccessWithoutConfirmation
-        CreateFolders                          = $CreateFolders
-        DeleteFolders                          = $DeleteFolders
-        MoveAccountsAndFolders                 = $MoveAccountsAndFolders
-
-        PvwaUrl                                = $PvwaUrl
-        AuthenticationType                     = $AuthenticationType
-        Credential                             = $Credential
-        SkipCertificateCheck                   = $SkipCertificateCheck
-    }
-
-    if ($MembershipExpirationDate) {
-        $TestSafeMemberParameters.Add('MembershipExpirationDate', $MembershipExpirationDate)
-    }
-
-    $DesiredState = Test-SafeMember @TestSafeMemberParameters
+    $DesiredState = Test-SafeMember @Properties
 
     if ($DesiredState -eq $false) {
 
-        if ($Ensure -eq [Ensure]::Present) {
-            Add-PASSafeMember -SafeName $SafeName -MemberName $MemberName -UseAccounts $UseAccounts -RetrieveAccounts $RetrieveAccounts -ListAccounts $ListAccounts -AddAccounts $AddAccounts -UpdateAccountContent $UpdateAccountContent -UpdateAccountProperties $UpdateAccountProperties -InitiateCPMAccountManagementOperations $InitiateCPMAccountManagementOperations -SpecifyNextAccountContent $SpecifyNextAccountContent -RenameAccounts $RenameAccounts -DeleteAccounts $DeleteAccounts -UnlockAccounts $UnlockAccounts -ManageSafe $ManageSafe -ManageSafeMembers $ManageSafeMembers -BackupSafe $BackupSafe -ViewAuditLog $ViewAuditLog -ViewSafeMembers $ViewSafeMembers -requestsAuthorizationLevel1 $requestsAuthorizationLevel1 -requestsAuthorizationLevel2 $requestsAuthorizationLevel2 -AccessWithoutConfirmation $AccessWithoutConfirmation -CreateFolders $CreateFolders -DeleteFolders $DeleteFolders -MoveAccountsAndFolders $MoveAccountsAndFolders
-        }
+        switch ($Ensure) {
 
-        if ($Ensure -eq [Ensure]::Absent) {
-            Get-PASSafeMember -SafeName $SafeName -MemberName $MemberName | Remove-PASSafeMember
-        }
+            'Absent' {
+                Remove-PASSafe -SafeName $SafeName
+            }
 
+            'Present' {
+                Add-PASSafe @Properties
+            }
+        }
     }
 }
-
 
 function Test-SafeMember {
     param (
