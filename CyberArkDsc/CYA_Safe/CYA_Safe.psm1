@@ -1,5 +1,6 @@
 ﻿enum Ensure {
     Absent
+    Exactly
     Present
 }
 
@@ -17,6 +18,8 @@ function Get-Safe {
         [bool]$SkipCertificateCheck
     )
 
+    $Properties = Get-AccountPropertiesFromPSBoundParameters $PSBoundParameters
+
     Get-CyberArkSession -PvwaUrl $PvwaUrl -Credential $Credential -AuthenticationType $AuthenticationType -SkipCertificateCheck $SkipCertificateCheck
 
     $CurrentState = [CYA_Safe]::new()
@@ -24,12 +27,20 @@ function Get-Safe {
     try {
         $ResourceExists = Get-PASSafe -SafeName $SafeName -ErrorAction SilentlyContinue | Select-Object -Property *
 
-        $CurrentState.Ensure = [Ensure]::Present
+        foreach ($Property in $Properties.GetEnumerator()) {
+            if ($ResourceExists.$($Property.Name) -ne $Property.Value) {
+                $CurrentState.Ensure = [Ensure]::Present
+                break
+            } else {
+                $CurrentState.Ensure = [Ensure]::Exactly
+            }
+        }
         $CurrentState.SafeName = $ResourceExists.SafeName
         $CurrentState.ManagingCPM = $ResourceExists.ManagingCPM
         $CurrentState.NumberOfDaysRetention = $ResourceExists.NumberOfDaysRetention
         $CurrentState.NumberOfVersionsRetention = $ResourceExists.NumberOfVersionsRetention
         $CurrentState.Description = $ResourceExists.Description
+        $CurrentState.SafeNumber = $ResourceExists.SafeNumber
     } catch {
         $CurrentState.Ensure = [Ensure]::Absent
     }
@@ -65,6 +76,22 @@ function Set-Safe {
 
             'Absent' {
                 Remove-PASSafe -SafeName $SafeName
+            }
+
+            'Exactly' {
+                $Safe = Get-Safe -SafeName $SafeName -PvwaUrl $PvwaUrl -Credential $Credential -AuthenticationType $AuthenticationType -SkipCertificateCheck $SkipCertificateCheck
+
+                if ([string]::isNullOrEmpty($Safe.SafeNumber)) {
+                    Add-PASSafe @Properties
+                } else {
+                    $SafeProperties = @{}
+                    foreach ($Property in $Properties.GetEnumerator()) {
+                        if ($ResourceExists.$($Property.Name) -ne $Property.Value) {
+                            $SafeProperties.Add($Property.Name, $Property.Value)
+                        }
+                    }
+                    Set-PASSafe @SafeProperties
+                }
             }
 
             'Present' {
@@ -103,6 +130,11 @@ function Test-Safe {
                 $isDesiredState = $true
             }
         }
+        'Exactly' {
+            if ($CurrentState.Ensure -eq [Ensure]::Exactly) {
+                $isDesiredState = $true
+            }
+        }
         'Present' {
             if ($CurrentState.Ensure -ne [Ensure]::Absent) {
                 $isDesiredState = $true
@@ -132,6 +164,9 @@ class CYA_Safe {
 
     [DscProperty()]
     [string]$Description
+
+    [DscProperty(NotConfigurable)]
+    [string]$SafeNumber
 
     [DscProperty(Mandatory)]
     [string]$PvwaUrl
