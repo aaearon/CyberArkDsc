@@ -1,43 +1,18 @@
 ﻿enum Ensure {
     Absent
-    Exactly
     Present
 }
 
 function Get-SafeMember {
     param (
-        [string]$SafeName,
-        [string]$MemberName,
-        [boolean]$UseAccounts,
-        [boolean]$RetrieveAccounts,
-        [boolean]$ListAccounts,
-        [boolean]$AddAccounts,
-        [boolean]$UpdateAccountContent,
-        [boolean]$UpdateAccountProperties,
-        [boolean]$InitiateCPMAccountManagementOperations,
-        [boolean]$SpecifyNextAccountContent,
-        [boolean]$RenameAccounts,
-        [boolean]$DeleteAccounts,
-        [boolean]$UnlockAccounts,
-        [boolean]$ManageSafe,
-        [boolean]$ManageSafeMembers,
-        [boolean]$BackupSafe,
-        [boolean]$ViewAuditLog,
-        [boolean]$ViewSafeMembers,
-        [boolean]$requestsAuthorizationLevel1,
-        [boolean]$requestsAuthorizationLevel2,
-        [boolean]$AccessWithoutConfirmation,
-        [boolean]$CreateFolders,
-        [boolean]$DeleteFolders,
-        [boolean]$MoveAccountsAndFolders,
+        [String]$SafeName,
+        [String]$MemberName,
 
         [String]$PvwaUrl,
         [String]$AuthenticationType,
         [pscredential]$Credential,
         [bool] $SkipCertificateCheck
     )
-
-    $Properties = Get-AccountPropertiesFromPSBoundParameters $PSBoundParameters
 
     Get-CyberArkSession -PvwaUrl $PvwaUrl -Credential $Credential -AuthenticationType $AuthenticationType -SkipCertificateCheck $SkipCertificateCheck
 
@@ -46,14 +21,7 @@ function Get-SafeMember {
     try {
         $ResourceExists = Get-PASSafeMember -SafeName $SafeName -MemberName $MemberName -ErrorAction SilentlyContinue
 
-        foreach ($Property in $Properties.GetEnumerator()) {
-            if ($ResourceExists.$($Property.Name) -ne $Property.Value) {
-                $CurrentState.Ensure = [Ensure]::Present
-                break
-            } else {
-                $CurrentState.Ensure = [Ensure]::Exactly
-            }
-        }
+        $CurrentState.Ensure = [Ensure]::Present
         $CurrentState.SafeName = $ResourceExists.SafeName
         $CurrentState.MemberName = $ResourceExists.UserName
         $CurrentState.UseAccounts = $ResourceExists.Permissions.useAccounts
@@ -133,27 +101,11 @@ function Set-SafeMember {
         switch ($Ensure) {
 
             'Absent' {
-                Remove-PASSafeMember -SafeName $SafeName
-            }
-
-            'Exactly' {
-                $SafeMember = Get-SafeMember -SafeName $SafeName -MemberName $MemberName -PvwaUrl $PvwaUrl -Credential $Credential -AuthenticationType $AuthenticationType -SkipCertificateCheck $SkipCertificateCheck
-
-                if ($SafeMember.Ensure -eq 'Absent') {
-                    Add-PASSafeMember @Properties
-                } else {
-                    $SafeProperties = @{}
-                    foreach ($Property in $Properties.GetEnumerator()) {
-                        if ($ResourceExists.$($Property.Name) -ne $Property.Value) {
-                            $SafeProperties.Add($Property.Name, $Property.Value)
-                        }
-                    }
-                    Set-PASSafeMember @Properties
-                }
+                Remove-PASSafe -SafeName $SafeName
             }
 
             'Present' {
-                Add-PASSafeMember @Properties
+                Add-PASSafe @Properties
             }
         }
     }
@@ -352,10 +304,10 @@ class CYA_SafeMember {
             SkipCertificateCheck                   = $this.SkipCertificateCheck
         }
 
-        if ($PSBoundParameters.ContainsKey('MembershipExpirationDate')) {
+        if ($this.MembershipExpirationDate) {
             $SetSafeMemberParameters.Add('MembershipExpirationDate', $this.MembershipExpirationDate)
         }
-        if ($PSBoundParameters.ContainsKey('SearchIn')) {
+        if ($this.SearchIn) {
             $SetSafeMemberParameters.Add('SearchIn', $this.SearchIn)
         }
 
@@ -397,7 +349,7 @@ class CYA_SafeMember {
             SkipCertificateCheck                   = $this.SkipCertificateCheck
         }
 
-        if ($PSBoundParameters.ContainsKey('MembershipExpirationDate')) {
+        if ($this.MembershipExpirationDate) {
             $TestSafeMemberParameters.Add('MembershipExpirationDate', $this.MembershipExpirationDate)
         }
 
