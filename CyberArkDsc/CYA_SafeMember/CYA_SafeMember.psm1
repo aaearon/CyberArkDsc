@@ -1,6 +1,5 @@
 ﻿enum Ensure {
     Absent
-    Exactly
     Present
 }
 
@@ -37,8 +36,6 @@ function Get-SafeMember {
         [bool] $SkipCertificateCheck
     )
 
-    $Properties = Get-AccountPropertiesFromPSBoundParameters $PSBoundParameters
-
     Get-CyberArkSession -PvwaUrl $PvwaUrl -Credential $Credential -AuthenticationType $AuthenticationType -SkipCertificateCheck $SkipCertificateCheck
 
     $CurrentState = [CYA_SafeMember]::new()
@@ -46,14 +43,7 @@ function Get-SafeMember {
     try {
         $ResourceExists = Get-PASSafeMember -SafeName $SafeName -MemberName $MemberName -ErrorAction SilentlyContinue
 
-        foreach ($Property in $Properties.GetEnumerator()) {
-            if ($ResourceExists.$($Property.Name) -ne $Property.Value) {
-                $CurrentState.Ensure = [Ensure]::Present
-                break
-            } else {
-                $CurrentState.Ensure = [Ensure]::Exactly
-            }
-        }
+        $CurrentState.Ensure = [Ensure]::Present
         $CurrentState.SafeName = $ResourceExists.SafeName
         $CurrentState.MemberName = $ResourceExists.UserName
         $CurrentState.UseAccounts = $ResourceExists.Permissions.useAccounts
@@ -126,34 +116,19 @@ function Set-SafeMember {
 
     Get-CyberArkSession -PvwaUrl $PvwaUrl -Credential $Credential -AuthenticationType $AuthenticationType -SkipCertificateCheck $SkipCertificateCheck
 
-    $DesiredState = Test-SafeMember @Properties
+    switch ($Ensure) {
 
-    if ($DesiredState -eq $false) {
+        'Absent' {
+            Remove-PASSafeMember -SafeName $SafeName -MemberName $MemberName
+        }
 
-        switch ($Ensure) {
+        'Present' {
+            $SafeMember = Get-SafeMember -SafeName $SafeName -MemberName $MemberName -PvwaUrl $PvwaUrl -Credential $Credential -AuthenticationType $AuthenticationType -SkipCertificateCheck $SkipCertificateCheck
 
-            'Absent' {
-                Remove-PASSafeMember -SafeName $SafeName
-            }
-
-            'Exactly' {
-                $SafeMember = Get-SafeMember -SafeName $SafeName -MemberName $MemberName -PvwaUrl $PvwaUrl -Credential $Credential -AuthenticationType $AuthenticationType -SkipCertificateCheck $SkipCertificateCheck
-
-                if ($SafeMember.Ensure -eq 'Absent') {
-                    Add-PASSafeMember @Properties
-                } else {
-                    $SafeProperties = @{}
-                    foreach ($Property in $Properties.GetEnumerator()) {
-                        if ($ResourceExists.$($Property.Name) -ne $Property.Value) {
-                            $SafeProperties.Add($Property.Name, $Property.Value)
-                        }
-                    }
-                    Set-PASSafeMember @Properties
-                }
-            }
-
-            'Present' {
+            if ([string]::IsNullOrEmpty($SafeMember.MemberName)) {
                 Add-PASSafeMember @Properties
+            } else {
+                Set-PASSafeMember @Properties
             }
         }
     }
@@ -195,7 +170,9 @@ function Test-SafeMember {
         [bool] $SkipCertificateCheck
     )
 
-    $isDesiredState = $false
+    $DesiredState = $true
+
+    $Properties = Get-AccountPropertiesFromPSBoundParameters $PSBoundParameters
 
     Get-CyberArkSession -PvwaUrl $PvwaUrl -Credential $Credential -AuthenticationType $AuthenticationType -SkipCertificateCheck $SkipCertificateCheck
 
@@ -203,18 +180,27 @@ function Test-SafeMember {
 
     switch ($Ensure) {
         'Absent' {
-            if ($CurrentState.Ensure -eq [Ensure]::Absent) {
-                $isDesiredState = $true
+            if ($CurrentState.Ensure -ne 'Absent') {
+                $DesiredState = $false
             }
         }
         'Present' {
-            if ($CurrentState.Ensure -ne [Ensure]::Absent) {
-                $isDesiredState = $true
+            if ($CurrentState.Ensure -ne 'Present') {
+                $DesiredState = $false
+                break
+            } else {
+                foreach ($Property in $Properties.GetEnumerator()) {
+                    Write-Host "$CurrentState.$($Property.Name) = $($Property.Value)"
+                    if ($CurrentState.$($Property.Name) -ne $Property.Value) {
+                        $DesiredState = $false
+                        break
+                    }
+                }
             }
         }
     }
 
-    return $isDesiredState
+    return $DesiredState
 }
 
 [DscResource()]
