@@ -97,7 +97,7 @@ function Test-Safe {
 
     Get-CyberArkSession -PvwaUrl $PvwaUrl -Credential $Credential -AuthenticationType $AuthenticationType -SkipCertificateCheck $SkipCertificateCheck
 
-    $CurrentState = Get-Safe @Properties
+    $CurrentState = Get-Safe -SafeName $SafeName -PvwaUrl $PvwaUrl -Credential $Credential -AuthenticationType $AuthenticationType -SkipCertificateCheck $SkipCertificateCheck
 
     switch ($Ensure) {
         'Absent' {
