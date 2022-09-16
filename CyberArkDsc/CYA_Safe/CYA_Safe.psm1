@@ -30,7 +30,6 @@ function Get-Safe {
         $CurrentState.NumberOfDaysRetention = $ResourceExists.NumberOfDaysRetention
         $CurrentState.NumberOfVersionsRetention = $ResourceExists.NumberOfVersionsRetention
         $CurrentState.Description = $ResourceExists.Description
-        $CurrentState.SafeNumber = $ResourceExists.SafeNumber
     } catch {
         $CurrentState.Ensure = [Ensure]::Absent
     }
@@ -142,9 +141,6 @@ class CYA_Safe {
 
     [DscProperty()]
     [string]$Description
-
-    [DscProperty(NotConfigurable)]
-    [string]$SafeNumber
 
     [DscProperty(Mandatory)]
     [string]$PvwaUrl

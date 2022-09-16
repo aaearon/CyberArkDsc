@@ -5,30 +5,8 @@
 
 function Get-SafeMember {
     param (
-        [string]$SafeName,
-        [string]$MemberName,
-        [boolean]$UseAccounts,
-        [boolean]$RetrieveAccounts,
-        [boolean]$ListAccounts,
-        [boolean]$AddAccounts,
-        [boolean]$UpdateAccountContent,
-        [boolean]$UpdateAccountProperties,
-        [boolean]$InitiateCPMAccountManagementOperations,
-        [boolean]$SpecifyNextAccountContent,
-        [boolean]$RenameAccounts,
-        [boolean]$DeleteAccounts,
-        [boolean]$UnlockAccounts,
-        [boolean]$ManageSafe,
-        [boolean]$ManageSafeMembers,
-        [boolean]$BackupSafe,
-        [boolean]$ViewAuditLog,
-        [boolean]$ViewSafeMembers,
-        [boolean]$requestsAuthorizationLevel1,
-        [boolean]$requestsAuthorizationLevel2,
-        [boolean]$AccessWithoutConfirmation,
-        [boolean]$CreateFolders,
-        [boolean]$DeleteFolders,
-        [boolean]$MoveAccountsAndFolders,
+        [String]$SafeName,
+        [String]$MemberName,
 
         [String]$PvwaUrl,
         [String]$AuthenticationType,
@@ -338,10 +316,10 @@ class CYA_SafeMember {
             SkipCertificateCheck                   = $this.SkipCertificateCheck
         }
 
-        if ($PSBoundParameters.ContainsKey('MembershipExpirationDate')) {
+        if ($this.MembershipExpirationDate) {
             $SetSafeMemberParameters.Add('MembershipExpirationDate', $this.MembershipExpirationDate)
         }
-        if ($PSBoundParameters.ContainsKey('SearchIn')) {
+        if ($this.SearchIn) {
             $SetSafeMemberParameters.Add('SearchIn', $this.SearchIn)
         }
 
@@ -383,7 +361,7 @@ class CYA_SafeMember {
             SkipCertificateCheck                   = $this.SkipCertificateCheck
         }
 
-        if ($PSBoundParameters.ContainsKey('MembershipExpirationDate')) {
+        if ($this.MembershipExpirationDate) {
             $TestSafeMemberParameters.Add('MembershipExpirationDate', $this.MembershipExpirationDate)
         }
 
