@@ -105,6 +105,7 @@ function Set-Account {
         [String]$PlatformId,
         [String]$SafeName,
         [String]$Name,
+        [pscredential]$Password,
         [hashtable]$ReconcileAccount,
         [hashtable]$LogonAccount,
 
@@ -129,17 +130,23 @@ function Set-Account {
             $Account = Get-Account -UserName $UserName -Address $Address -PvwaUrl $PvwaUrl -AuthenticationType $AuthenticationType -Credential $Credential -SkipCertificateCheck:$SkipCertificateCheck
 
             if ([string]::isNullOrEmpty($Account.Id)) {
+                # Convert password to SecureString and add as the Password key to pass to Add-PASAccount
+                if ($Properties.ContainsKey('Password')) {
+                    $Properties.Add('secret', $Password.Password)
+                    $Properties.Remove('Password')
+                }
+
                 # Remove linked accounts as they need to be added after the account is created.
                 $Properties.Remove('ReconcileAccount') | Out-Null
                 $Properties.Remove('LogonAccount') | Out-Null
 
                 $ResultingAccount = Add-PASAccount @Properties
 
-                if ($PSBoundParameters.ContainsKey('LogonAccount')) {
+                if ($null -ne $PSBoundParameters.LogonAccount) {
                     $ResultingAccount | Set-PASLinkedAccount -safe $LogonAccount.Safe -folder $LogonAccount.Folder -name $LogonAccount.Name -extraPasswordIndex 1
                 }
 
-                if ($PSBoundParameters.ContainsKey('ReconcileAccount')) {
+                if ($null -ne $PSBoundParameters.ReconcileAccount) {
                     $ResultingAccount | Set-PASLinkedAccount -safe $ReconcileAccount.Safe -folder $ReconcileAccount.Folder -name $ReconcileAccount.Name -extraPasswordIndex 3
                 }
             } else {
@@ -267,6 +274,9 @@ class CYA_Account {
     [DscProperty()]
     [System.Collections.Hashtable]$LogonAccount
 
+    [DscProperty()]
+    [pscredential]$Password
+
     [DscProperty(Mandatory)]
     [string]$PvwaUrl
 
@@ -285,7 +295,7 @@ class CYA_Account {
     }
 
     [void] Set() {
-        Set-Account -Ensure $this.Ensure -UserName $this.UserName -Address $this.Address -PlatformId $this.PlatformId -SafeName $this.SafeName -Name $this.Name -ReconcileAccount $this.ReconcileAccount -LogonAccount $this.LogonAccount -PvwaUrl $this.PvwaUrl -AuthenticationType $this.AuthenticationType -Credential $this.Credential -SkipCertificateCheck:$this.SkipCertificateCheck
+        Set-Account -Ensure $this.Ensure -UserName $this.UserName -Address $this.Address -PlatformId $this.PlatformId -SafeName $this.SafeName -Name $this.Name -ReconcileAccount $this.ReconcileAccount -LogonAccount $this.LogonAccount -Password $this.Password -PvwaUrl $this.PvwaUrl -AuthenticationType $this.AuthenticationType -Credential $this.Credential -SkipCertificateCheck:$this.SkipCertificateCheck
     }
 
     [bool] Test() {

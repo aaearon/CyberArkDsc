@@ -35,7 +35,7 @@ function Get-AccountPropertiesFromPSBoundParameters {
     $Properties.Remove("Ensure") | Out-Null
 
     # https://stackoverflow.com/a/54138232
-    ($Properties.GetEnumerator() | Where-Object { $null -eq $_.Value }) | ForEach-Object { $Properties.Remove($_.Name) | Out-Null}
+    ($Properties.GetEnumerator() | Where-Object { [string]::IsNullOrEmpty($_.Value) }) | ForEach-Object { $Properties.Remove($_.Name) | Out-Null}
 
     return $Properties
 }
