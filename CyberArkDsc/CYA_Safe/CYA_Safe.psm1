@@ -57,18 +57,19 @@ function Set-Safe {
 
     Get-CyberArkSession -PvwaUrl $PvwaUrl -Credential $Credential -AuthenticationType $AuthenticationType -SkipCertificateCheck $SkipCertificateCheck
 
-    $DesiredState = Test-Safe @Properties
+    switch ($Ensure) {
 
-    if ($DesiredState -eq $false) {
+        'Absent' {
+            Remove-PASSafe -SafeName $SafeName
+        }
 
-        switch ($Ensure) {
+        'Present' {
+            $Safe = Get-Safe -SafeName $SafeName -PvwaUrl $PvwaUrl -Credential $Credential -AuthenticationType $AuthenticationType -SkipCertificateCheck $SkipCertificateCheck
 
-            'Absent' {
-                Remove-PASSafe -SafeName $SafeName
-            }
-
-            'Present' {
+            if ([string]::isNullOrEmpty($Safe.SafeNumber)) {
                 Add-PASSafe @Properties
+            } else {
+                Set-PASSafe @Properties
             }
         }
     }
@@ -89,28 +90,36 @@ function Test-Safe {
         [bool]$SkipCertificateCheck
     )
 
-    $isDesiredState = $false
+    $DesiredState = $true
 
     $Properties = Get-AccountPropertiesFromPSBoundParameters $PSBoundParameters
 
     Get-CyberArkSession -PvwaUrl $PvwaUrl -Credential $Credential -AuthenticationType $AuthenticationType -SkipCertificateCheck $SkipCertificateCheck
 
-    $CurrentState = Get-Safe @Properties
+    $CurrentState = Get-Safe -SafeName $SafeName -PvwaUrl $PvwaUrl -Credential $Credential -AuthenticationType $AuthenticationType -SkipCertificateCheck $SkipCertificateCheck
 
     switch ($Ensure) {
         'Absent' {
-            if ($CurrentState.Ensure -eq [Ensure]::Absent) {
-                $isDesiredState = $true
+            if ($CurrentState.Ensure -ne 'Absent') {
+                $DesiredState = $false
             }
         }
         'Present' {
-            if ($CurrentState.Ensure -ne [Ensure]::Absent) {
-                $isDesiredState = $true
+            if ($CurrentState.Ensure -ne 'Present') {
+                $DesiredState = $false
+                break
+            } else {
+                foreach ($Property in $Properties.GetEnumerator()) {
+                    if ($CurrentState.$($Property.Name) -ne $Property.Value) {
+                        $DesiredState = $false
+                        break
+                    }
+                }
             }
         }
     }
 
-    return $isDesiredState
+    return $DesiredState
 }
 
 [DscResource()]
@@ -159,4 +168,3 @@ class CYA_Safe {
         return $Test
     }
 }
-

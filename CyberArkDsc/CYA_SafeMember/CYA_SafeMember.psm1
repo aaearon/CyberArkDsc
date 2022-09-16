@@ -94,18 +94,19 @@ function Set-SafeMember {
 
     Get-CyberArkSession -PvwaUrl $PvwaUrl -Credential $Credential -AuthenticationType $AuthenticationType -SkipCertificateCheck $SkipCertificateCheck
 
-    $DesiredState = Test-SafeMember @Properties
+    switch ($Ensure) {
 
-    if ($DesiredState -eq $false) {
+        'Absent' {
+            Remove-PASSafeMember -SafeName $SafeName -MemberName $MemberName
+        }
 
-        switch ($Ensure) {
+        'Present' {
+            $SafeMember = Get-SafeMember -SafeName $SafeName -MemberName $MemberName -PvwaUrl $PvwaUrl -Credential $Credential -AuthenticationType $AuthenticationType -SkipCertificateCheck $SkipCertificateCheck
 
-            'Absent' {
-                Remove-PASSafe -SafeName $SafeName
-            }
-
-            'Present' {
-                Add-PASSafe @Properties
+            if ([string]::IsNullOrEmpty($SafeMember.MemberName)) {
+                Add-PASSafeMember @Properties
+            } else {
+                Set-PASSafeMember @Properties
             }
         }
     }
@@ -147,7 +148,9 @@ function Test-SafeMember {
         [bool] $SkipCertificateCheck
     )
 
-    $isDesiredState = $false
+    $DesiredState = $true
+
+    $Properties = Get-AccountPropertiesFromPSBoundParameters $PSBoundParameters
 
     Get-CyberArkSession -PvwaUrl $PvwaUrl -Credential $Credential -AuthenticationType $AuthenticationType -SkipCertificateCheck $SkipCertificateCheck
 
@@ -155,18 +158,27 @@ function Test-SafeMember {
 
     switch ($Ensure) {
         'Absent' {
-            if ($CurrentState.Ensure -eq [Ensure]::Absent) {
-                $isDesiredState = $true
+            if ($CurrentState.Ensure -ne 'Absent') {
+                $DesiredState = $false
             }
         }
         'Present' {
-            if ($CurrentState.Ensure -ne [Ensure]::Absent) {
-                $isDesiredState = $true
+            if ($CurrentState.Ensure -ne 'Present') {
+                $DesiredState = $false
+                break
+            } else {
+                foreach ($Property in $Properties.GetEnumerator()) {
+                    Write-Host "$CurrentState.$($Property.Name) = $($Property.Value)"
+                    if ($CurrentState.$($Property.Name) -ne $Property.Value) {
+                        $DesiredState = $false
+                        break
+                    }
+                }
             }
         }
     }
 
-    return $isDesiredState
+    return $DesiredState
 }
 
 [DscResource()]
@@ -180,8 +192,8 @@ class CYA_SafeMember {
     [DscProperty(Key)]
     [string]$MemberName
 
-    [DscProperty()]
-    [String]$SearchIn = $null
+    [DscProperty(Mandatory)]
+    [string]$SearchIn
 
     [DscProperty()]
     [datetime]$MembershipExpirationDate
@@ -275,6 +287,7 @@ class CYA_SafeMember {
 
             SafeName                               = $this.SafeName
             MemberName                             = $this.MemberName
+            SearchIn                               = $this.SearchIn
             UseAccounts                            = $this.UseAccounts
             RetrieveAccounts                       = $this.RetrieveAccounts
             ListAccounts                           = $this.ListAccounts
@@ -304,11 +317,8 @@ class CYA_SafeMember {
             SkipCertificateCheck                   = $this.SkipCertificateCheck
         }
 
-        if ($this.MembershipExpirationDate) {
+        if ($PSBoundParameters.ContainsKey('MembershipExpirationDate')) {
             $SetSafeMemberParameters.Add('MembershipExpirationDate', $this.MembershipExpirationDate)
-        }
-        if ($this.SearchIn) {
-            $SetSafeMemberParameters.Add('SearchIn', $this.SearchIn)
         }
 
         Set-SafeMember @SetSafeMemberParameters
@@ -349,7 +359,7 @@ class CYA_SafeMember {
             SkipCertificateCheck                   = $this.SkipCertificateCheck
         }
 
-        if ($this.MembershipExpirationDate) {
+        if ($PSBoundParameters.ContainsKey('MembershipExpirationDate')) {
             $TestSafeMemberParameters.Add('MembershipExpirationDate', $this.MembershipExpirationDate)
         }
 
