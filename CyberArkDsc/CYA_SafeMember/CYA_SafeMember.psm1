@@ -192,8 +192,8 @@ class CYA_SafeMember {
     [DscProperty(Key)]
     [string]$MemberName
 
-    [DscProperty()]
-    [String]$SearchIn = $null
+    [DscProperty(Mandatory)]
+    [string]$SearchIn
 
     [DscProperty()]
     [datetime]$MembershipExpirationDate
@@ -287,6 +287,7 @@ class CYA_SafeMember {
 
             SafeName                               = $this.SafeName
             MemberName                             = $this.MemberName
+            SearchIn                               = $this.SearchIn
             UseAccounts                            = $this.UseAccounts
             RetrieveAccounts                       = $this.RetrieveAccounts
             ListAccounts                           = $this.ListAccounts
@@ -316,11 +317,8 @@ class CYA_SafeMember {
             SkipCertificateCheck                   = $this.SkipCertificateCheck
         }
 
-        if ($this.MembershipExpirationDate) {
+        if ($PSBoundParameters.ContainsKey('MembershipExpirationDate')) {
             $SetSafeMemberParameters.Add('MembershipExpirationDate', $this.MembershipExpirationDate)
-        }
-        if ($this.SearchIn) {
-            $SetSafeMemberParameters.Add('SearchIn', $this.SearchIn)
         }
 
         Set-SafeMember @SetSafeMemberParameters
@@ -361,7 +359,7 @@ class CYA_SafeMember {
             SkipCertificateCheck                   = $this.SkipCertificateCheck
         }
 
-        if ($this.MembershipExpirationDate) {
+        if ($PSBoundParameters.ContainsKey('MembershipExpirationDate')) {
             $TestSafeMemberParameters.Add('MembershipExpirationDate', $this.MembershipExpirationDate)
         }
 
