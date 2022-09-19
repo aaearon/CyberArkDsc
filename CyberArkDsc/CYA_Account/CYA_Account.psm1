@@ -106,6 +106,7 @@ function Set-Account {
         [String]$SafeName,
         [String]$Name,
         [pscredential]$Password,
+        [bool]$PasswordNeverResets,
         [hashtable]$ReconcileAccount,
         [hashtable]$LogonAccount,
 
@@ -133,7 +134,8 @@ function Set-Account {
                 # Convert password to SecureString and add as the Password key to pass to Add-PASAccount
                 if ($Properties.ContainsKey('Password')) {
                     $Properties.Add('secret', $Password.Password)
-                    $Properties.Remove('Password')
+                    $Properties.Remove('Password') | Out-Null
+                    $Properties.Remove('PasswordNeverResets') | Out-Null
                 }
 
                 # Remove linked accounts as they need to be added after the account is created.
@@ -160,6 +162,12 @@ function Set-Account {
                 if ($null -ne $ReconcileAccount) {
                     Set-PASLinkedAccount -AccountID $Account.Id -safe $ReconcileAccount.Safe -folder $ReconcileAccount.Folder -name $ReconcileAccount.Name -extraPasswordIndex 3
                 }
+
+                if ($PasswordNeverResets -and $Properties.ContainsKey('Password')) {
+                    Invoke-PASCPMOperation -AccountID $Account.ID -ChangeTask -NewCredentials $Password.Password
+                }
+                $Properties.Remove('Password') | Out-Null
+                $Properties.Remove('PasswordNeverResets') | Out-Null
 
                 $Actions = @()
 
@@ -277,6 +285,9 @@ class CYA_Account {
     [DscProperty()]
     [pscredential]$Password
 
+    [DscProperty()]
+    [bool]$PasswordNeverResets = $false
+
     [DscProperty(Mandatory)]
     [string]$PvwaUrl
 
@@ -295,7 +306,7 @@ class CYA_Account {
     }
 
     [void] Set() {
-        Set-Account -Ensure $this.Ensure -UserName $this.UserName -Address $this.Address -PlatformId $this.PlatformId -SafeName $this.SafeName -Name $this.Name -ReconcileAccount $this.ReconcileAccount -LogonAccount $this.LogonAccount -Password $this.Password -PvwaUrl $this.PvwaUrl -AuthenticationType $this.AuthenticationType -Credential $this.Credential -SkipCertificateCheck:$this.SkipCertificateCheck
+        Set-Account -Ensure $this.Ensure -UserName $this.UserName -Address $this.Address -PlatformId $this.PlatformId -SafeName $this.SafeName -Name $this.Name -ReconcileAccount $this.ReconcileAccount -LogonAccount $this.LogonAccount -Password $this.Password -PasswordNeverResets $this.PasswordNeverResets -PvwaUrl $this.PvwaUrl -AuthenticationType $this.AuthenticationType -Credential $this.Credential -SkipCertificateCheck:$this.SkipCertificateCheck
     }
 
     [bool] Test() {
